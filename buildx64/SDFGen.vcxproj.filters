@@ -1,0 +1,54 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="16.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="G:\gitRepositories\SDFGen-master\main.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="G:\gitRepositories\SDFGen-master\makelevelset3.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Eigen-libiglStudy\myEigen.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{8A691CAC-D35F-31C0-A094-559D4C1C1898}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Head Files">
+      <UniqueIdentifier>{9ab8dbe1-d74b-4da1-a1c8-2a96ce297371}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\vec.h">
+      <Filter>Head Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\util.h">
+      <Filter>Head Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\makelevelset3.h">
+      <Filter>Head Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\hashtable.h">
+      <Filter>Head Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\hashgrid.h">
+      <Filter>Head Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\config.h">
+      <Filter>Head Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\array3.h">
+      <Filter>Head Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\array2.h">
+      <Filter>Head Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\array1.h">
+      <Filter>Head Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Eigen-libiglStudy\myEigen.h">
+      <Filter>Head Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>

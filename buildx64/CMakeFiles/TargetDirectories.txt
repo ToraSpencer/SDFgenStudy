@@ -1,0 +1,3 @@
+G:/gitRepositories/SDFGen-master/buildx64/CMakeFiles/SDFGen.dir
+G:/gitRepositories/SDFGen-master/buildx64/CMakeFiles/ALL_BUILD.dir
+G:/gitRepositories/SDFGen-master/buildx64/CMakeFiles/ZERO_CHECK.dir

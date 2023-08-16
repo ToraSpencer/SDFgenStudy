@@ -1,0 +1,50 @@
+*.VC.db
+*.dll
+*.exe
+*.ipch
+	
+*.sdf
+*.ncb
+*.tlog
+*.iobj
+		
+*.ipdb
+*.exp
+*.log
+*.recipe
+*.lib
+
+*.vc.db
+*.ncb
+*.xlsx
+*.cache
+
+*.pdf
+*.docx
+
+# PreCompiled Header，就是预先编译好的头文件，在编译时指定/Yu开关时编译器自动生成
+*.pch
+	
+# Program DataBase，即程序数据库文件，用来记录调试信息
+*.pdb
+
+# 用户界面的自定义配置文件
+*.suo	
+	
+# 也是用户界面的自定义配置文件
+*.vcxproj.user	
+
+
+# 编译器生成的浏览信息文件，在代码导航的时候非常有用
+*.sbr	
+
+# class diagram, 类图；	 
+*.cd	
+
+
+# 不要忽略的文件夹
+!data/
+
+# 忽略的文件夹
+Release/
+x64/
