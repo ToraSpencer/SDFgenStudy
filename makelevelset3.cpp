@@ -19,59 +19,61 @@ float point_segment_distance(const Vec3f &x0, const Vec3f &x1, const Vec3f &x2)
 }
 
 
-// 计算点-三角片距离；   find distance x0 is from triangle x1-x2-x3
-float point_triangle_distance(const Vec3f &x0, const Vec3f &x1, const Vec3f &x2, const Vec3f &x3)
+// 计算点-三角片距离；   find distance p0 is from triangle p1-p2-p3
+float point_triangle_distance(const Vec3f &p0, const Vec3f &p1, const Vec3f &p2, const Vec3f &p3)
 {
    // first find barycentric coordinates of closest point on infinite plane
-   Vec3f x13(x1-x3), x23(x2-x3), x03(x0-x3);
-   float m13=mag2(x13), m23=mag2(x23), d=dot(x13,x23);
-   float invdet=1.f/max(m13*m23-d*d,1e-30f);
-   float a=dot(x13,x03), b=dot(x23,x03);
+   Vec3f arrow31(p1-p3), arrow32(p2-p3), arrow30(p0-p3);
+   float a = dot(arrow31, arrow30);
+   float b = dot(arrow32, arrow30);
+   float m31=mag2(arrow31), m32=mag2(arrow32), d=dot(arrow31,arrow32);
+   float invdet=1.f / max(m31 * m32 - d * d,1e-30f);
+
    // the barycentric coordinates themselves
-   float w23=invdet*(m23*a-d*b);
-   float w31=invdet*(m13*b-d*a);
-   float w12=1-w23-w31;
-   if(w23>=0 && w31>=0 && w12>=0)  // if we're inside the triangle
-      return dist(x0, w23*x1+w31*x2+w12*x3); 
+   float w32=invdet*(m32*a-d*b);
+   float w31=invdet*(m31*b-d*a);
+   float w12=1-w32-w31;
+   if(w32>=0 && w31>=0 && w12>=0)                // if we're inside the triangle
+      return dist(p0, w32*p1+w31*p2+w12*p3); 
     else
     { 
        // we have to clamp to one of the edges
-      if(w23>0) // this rules out edge 2-3 for us
-         return min(point_segment_distance(x0,x1,x2), point_segment_distance(x0,x1,x3));
+      if(w32>0) // this rules out edge 2-3 for us
+         return min(point_segment_distance(p0,p1,p2), point_segment_distance(p0,p1,p3));
       else if(w31>0) // this rules out edge 1-3
-         return min(point_segment_distance(x0,x1,x2), point_segment_distance(x0,x2,x3));
+         return min(point_segment_distance(p0,p1,p2), point_segment_distance(p0,p2,p3));
       else // w12 must be >0, ruling out edge 1-2
-         return min(point_segment_distance(x0,x1,x3), point_segment_distance(x0,x2,x3));
+         return min(point_segment_distance(p0,p1,p3), point_segment_distance(p0,p2,p3));
    }
 }
 
 
 void check_neighbour(const std::vector<Vec3ui> &tris, const std::vector<Vec3f> &vers,
                  SDF_GEN::Array3f &DFvalues, SDF_GEN::Array3i &closest_tris,
-                 const Vec3f &ver0, int i0, int j0, int k0, int i1, int j1, int k1)
+                 const Vec3f &ver0, const int i0, const int j0, const int k0, const int i1, const int j1, const int k1)
 {
    if(closest_tris(i1,j1,k1)>=0)
    {
       unsigned int vaIdx, vbIdx, vcIdx;
       const Vec3ui& tri = tris[closest_tris(i1, j1, k1)];
       assign(tri, vaIdx, vbIdx, vcIdx);
-      float d=point_triangle_distance(ver0, vers[vaIdx], vers[vbIdx], vers[vcIdx]);
+      float d = point_triangle_distance(ver0, vers[vaIdx], vers[vbIdx], vers[vcIdx]);
 
-      if(d < DFvalues(i0,j0,k0))
+      if(d < DFvalues(i0, j0, k0))
       {
 #ifdef USE_MULTITHREADS
           std::lock_guard<std::mutex> guard(g_mutex);
 #endif
          DFvalues(i0,j0,k0) = d;
-         closest_tris(i0,j0,k0)=closest_tris(i1,j1,k1);
+         closest_tris(i0,j0,k0) = closest_tris(i1,j1,k1);
       }
    }
 }
 
 
-void sweep(const std::vector<Vec3ui> &tris, const std::vector<Vec3f> &vers,
-    SDF_GEN::Array3f &DFvalues, SDF_GEN::Array3i &closest_tris, const Vec3f &origin, float step,
-                  int di, int dj, int dk)
+void sweep(const std::vector<Vec3ui>&tris, const std::vector<Vec3f> &vers,
+    SDF_GEN::Array3f& DFvalues, SDF_GEN::Array3i &closest_tris, const Vec3f &origin, const float step,
+                  const int di, const int dj, const int dk)
 {
     const float ox = origin[0];
     const float oy = origin[1];
@@ -134,7 +136,6 @@ void sweep(const std::vector<Vec3ui> &tris, const std::vector<Vec3f> &vers,
                }
            }
        });
- 
 }
 
 
@@ -160,27 +161,27 @@ int orientation(double x1, double y1, double x2, double y2, double &twice_signed
 }
 
 
-// 2D平面上测试点(x0, y0)是否在 (x1,y1)(x2,y2)(x3,y3)三点围成的三角形内；如果是，则返回true，且在abc三个变量中写入该点在三角形中的重心坐标；
-bool point_in_triangle_2d(double x0, double y0, 
-                                 double x1, double y1, double x2, double y2, double x3, double y3,
+// 栅格坐标系下，2D平面上测试点(X0, Y0)是否在 (X1,Y1), (X2,Y2), (X3,Y3)三点围成的三角形内；如果是，则返回true，且在abc三个变量中写入该点在三角形中的重心坐标；
+bool point_in_triangle_2d(double X0, double Y0, 
+                                 double X1, double Y1, double X2, double Y2, double X3, double Y3,
                                  double& a, double& b, double& c)
 {
-   x1-=x0; x2-=x0; x3-=x0;
-   y1-=y0; y2-=y0; y3-=y0;
-   int signa=orientation(x2, y2, x3, y3, a);
+   X1-=X0; X2-=X0; X3-=X0;
+   Y1-=Y0; Y2-=Y0; Y3-=Y0;
+   int signa=orientation(X2, Y2, X3, Y3, a);
    if(signa==0) 
        return false;
 
-   int signb=orientation(x3, y3, x1, y1, b);
+   int signb=orientation(X3, Y3, X1, Y1, b);
    if(signb!=signa) 
        return false;
    
-   int signc=orientation(x1, y1, x2, y2, c);
+   int signc=orientation(X1, Y1, X2, Y2, c);
    
    if(signc!=signa)
        return false;
    double sum=a+b+c;
-   assert(sum!=0);           // if the SOS signs match and are nonkero, there's no way all of a, b, and c are zero.
+   assert(sum!=0);           // if the SOS signs match and are nonkero, there's no waY all of a, b, and c are zero.
    a/=sum;
    b/=sum;
    c/=sum;

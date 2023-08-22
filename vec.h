@@ -367,6 +367,8 @@ inline unsigned int hash(const Vec<N,T> &a)
    return h;
 }
 
+
+// assign()——取向量的各个分量：
 template<unsigned int N, class T>
 inline void assign(const Vec<N,T> &a, T &a0, T &a1)
 { 
@@ -396,6 +398,7 @@ inline void assign(const Vec<N,T> &a, T &a0, T &a1, T &a2, T &a3, T &a4, T &a5)
    assert(N==6);
    a0=a.v[0]; a1=a.v[1]; a2=a.v[2]; a3=a.v[3]; a4=a.v[4]; a5=a.v[5];
 }
+
 
 template<unsigned int N, class T>
 inline Vec<N,int> round(const Vec<N,T> &a)

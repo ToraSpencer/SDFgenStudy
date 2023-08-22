@@ -10,8 +10,6 @@
 #include "myEigen.h"
 
 #include <list>
-
-
 #ifdef HAVE_VTK
   #include <vtkImageData.h>
   #include <vtkFloatArray.h>
@@ -19,7 +17,15 @@
   #include <vtkPointData.h>
   #include <vtkSmartPointer.h>
 #endif
- 
+
+
+// 栅格坐标系： 用顶点到坐标栅格起点的步数来表示顶点的位置；
+/*
+    约定栅格坐标系一律用大写字母表示，X0 = x0 - ox / step;   
+            X0为顶点ver0(x0, y0, z0)在栅格坐标系下的坐标的X分量；
+            其中ox为栅格起点的x坐标，step为栅格步长；
+ */
+
 
 template <typename T>
 Eigen::Matrix<T, 1, 3> vec2Vec(const Vec<3, T>& vec)
@@ -28,15 +34,15 @@ Eigen::Matrix<T, 1, 3> vec2Vec(const Vec<3, T>& vec)
 }
  
 template <typename T>
-Eigen::MatrixXd vers2mat(const std::vector<Vec<3, T>>& vers)
+Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> vers2mat(const std::vector<Vec<3, T>>& vers)
 {
-    Eigen::MatrixXd versMat;
+    Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> versMat;
     versMat.resize(vers.size(), 3);
     for (unsigned i = 0; i<vers.size(); ++i) 
     {
-        versMat(i, 0) = static_cast<double>(vers[i][0]);
-        versMat(i, 1) = static_cast<double>(vers[i][1]);
-        versMat(i, 2) = static_cast<double>(vers[i][2]);
+        versMat(i, 0) = vers[i][0];
+        versMat(i, 1) = vers[i][1];
+        versMat(i, 2) = vers[i][2];
     }
     return versMat;
 }
@@ -469,7 +475,7 @@ int test2(int argc, char* argv[])
     std::string line;
     std::vector<Vec3f> vers;                  // 输入网格顶点
     std::vector<Vec3ui> tris;                 // 输入网格三角片；
-    Eigen::MatrixXd versMat;
+    Eigen::MatrixXf versMat;
     Eigen::MatrixXi trisMat;
 
     // 参数1——网格文件地址
@@ -588,9 +594,10 @@ int test2(int argc, char* argv[])
 }
  
 
-void foo(const std::vector<Vec3ui>& tris, const std::vector<Vec3f>& vers,
+// 原make_level_set3()函数；
+void calcSDF(const std::vector<Vec3ui>& tris, const std::vector<Vec3f>& vers,
     const Vec3f& startPos, float step, int ni, int nj, int nk,
-    SDF_GEN::Array3f& DFvalues, const int exact_band = 1)
+    SDF_GEN::Array3f& SDFvalues, const int exact_band = 1)
 {
     /*
     void make_level_set3(
@@ -599,7 +606,7 @@ void foo(const std::vector<Vec3ui>& tris, const std::vector<Vec3f>& vers,
             const Vec3f &origin,                                坐标栅格原点
             float step,                                                 坐标栅格步长
             int ni, int nj, int nk,                                   坐标栅格三个维度的步数；
-            SDF_GEN::Array3f &DFvalues,                                  输出的距离场三维矩阵；
+            SDF_GEN::Array3f &SDFvalues,                                  输出的距离场三维矩阵；
             const int exact_band                                默认值为1，求三角片包围盒时外扩的栅格数；
             )
 
@@ -610,61 +617,84 @@ void foo(const std::vector<Vec3ui>& tris, const std::vector<Vec3f>& vers,
     const float oy = startPos[1];
     const float oz = startPos[2];
 
-    DFvalues.resize(ni, nj, nk);
-    DFvalues.assign((ni + nj + nk) * step);                                    // upper bound on distance
+    SDFvalues.resize(ni, nj, nk);
+    SDFvalues.assign((ni + nj + nk) * step);                           // upper bound on distance
     SDF_GEN::Array3i closest_tris(ni, nj, nk, -1);                     // 每个坐标栅格点最近的三角片的索引，初始化为-1；
-    SDF_GEN::Array3i intersection_count(ni, nj, nk, 0);       // 判断距离符号时有用；intersection_count(i,j,k) is # of tris intersections in (i-1,i]vers{j}vers{k}
+    SDF_GEN::Array3i intersection_count(ni, nj, nk, 0);         //  每个栅格与网格三角片交点的数目；
+                                                                              // 判断距离符号时有用；intersection_count(i,j,k) is # of tris intersections in (i-1,i]vers{j}vers{k} 
 
     // we begin by initializing distances near the mesh, and figuring out intersection counts
 
     // 1. 对三角片的遍历
     tiktok& tt = tiktok::getInstance();
     tt.start();
-
     PARALLEL_FOR(0, tris.size(), [&](unsigned triIdx)
         {
             unsigned int vaIdx, vbIdx, vcIdx;                  // 当前三角片的三个顶点索引；
             assign(tris[triIdx], vaIdx, vbIdx, vcIdx);
 
             // 1.1 用顶点到坐标栅格起点的步数来表示顶点的位置；
-            double vax_sc = ((double)vers[vaIdx][0] - ox) / step, vay_sc = ((double)vers[vaIdx][1] - oy) / step, vaz_sc = ((double)vers[vaIdx][2] - oz) / step;
-            double vbx_sc = ((double)vers[vbIdx][0] - ox) / step, vby_sc = ((double)vers[vbIdx][1] - oy) / step, vbz_sc = ((double)vers[vbIdx][2] - oz) / step;
-            double vcx_sc = ((double)vers[vcIdx][0] - ox) / step, vcy_sc = ((double)vers[vcIdx][1] - oy) / step, vcz_sc = ((double)vers[vcIdx][2] - oz) / step;
+            double Xa = ((double)vers[vaIdx][0] - ox) / step, Ya = ((double)vers[vaIdx][1] - oy) / step, Za = ((double)vers[vaIdx][2] - oz) / step;
+            double Xb = ((double)vers[vbIdx][0] - ox) / step, Yb = ((double)vers[vbIdx][1] - oy) / step, Zb = ((double)vers[vbIdx][2] - oz) / step;
+            double Xc = ((double)vers[vcIdx][0] - ox) / step, Yc = ((double)vers[vcIdx][1] - oy) / step, Zc = ((double)vers[vcIdx][2] - oz) / step;
 
-            // 求三角片的包围盒，用坐标栅格中的索引表示——(i0, j0, k0), (i1, j1, k1)确定的长方体空间；
-            int i0 = clamp(int(min(vax_sc, vbx_sc, vcx_sc)) - exact_band, 0, ni - 1), i1 = clamp(int(max(vax_sc, vbx_sc, vcx_sc)) + exact_band + 1, 0, ni - 1);
-            int j0 = clamp(int(min(vay_sc, vby_sc, vcy_sc)) - exact_band, 0, nj - 1), j1 = clamp(int(max(vay_sc, vby_sc, vcy_sc)) + exact_band + 1, 0, nj - 1);
-            int k0 = clamp(int(min(vaz_sc, vbz_sc, vcz_sc)) - exact_band, 0, nk - 1), k1 = clamp(int(max(vaz_sc, vbz_sc, vcz_sc)) + exact_band + 1, 0, nk - 1);
+            // 1.2 求三角片的包围盒——(Xmin, Ymin, Zmin), (Xmax, Ymax, Zmax)确定的长方体空间；
+            int Xmin = clamp(int(min(Xa, Xb, Xc)) - exact_band, 0, ni - 1), Xmax = clamp(int(max(Xa, Xb, Xc)) + exact_band + 1, 0, ni - 1);
+            int Ymin = clamp(int(min(Ya, Yb, Yc)) - exact_band, 0, nj - 1), Ymax = clamp(int(max(Ya, Yb, Yc)) + exact_band + 1, 0, nj - 1);
+            int Zmin = clamp(int(min(Za, Zb, Zc)) - exact_band, 0, nk - 1), Zmax = clamp(int(max(Za, Zb, Zc)) + exact_band + 1, 0, nk - 1);
 
-            // 计算三角片包围盒内的所有坐标栅格点，到当前三角片的距离，找出最小距离；
-            for (int k = k0; k <= k1; ++k)
-                for (int j = j0; j <= j1; ++j)
-                    for (int i = i0; i <= i1; ++i)
+            // 1.3 计算三角片包围盒内的所有栅格采样点，到当前三角片的距离，找出最小距离，作为该采样点暂时的SDF值；
+            for (int k = Zmin; k <= Zmax; ++k)
+                for (int j = Ymin; j <= Ymax; ++j)
+                    for (int i = Xmin; i <= Xmax; ++i)
                     {
-                        Vec3f ver0(i * step + ox, j * step + oy, k * step + oz);           // 当前栅格坐标点；
-                        float d = point_triangle_distance(ver0, vers[vaIdx], vers[vbIdx], vers[vcIdx]);
-                        if (d < DFvalues(i, j, k))
+                        Vec3f ver0(i * step + ox, j * step + oy, k * step + oz);                                         // 当前栅格采样点
+                        float dis = point_triangle_distance(ver0, vers[vaIdx], vers[vbIdx], vers[vcIdx]);  // 当前栅格采样点到当前三角片的距离
+                        if (dis < SDFvalues(i, j, k))       // 若当前计算的距离比之前计算的小，更新距离数据；需要加互斥锁的写操作；
                         {
                             std::lock_guard<std::mutex> guard(g_mutex);
-                            DFvalues(i, j, k) = d;                // 若当前计算的距离比之前计算的小，更新距离数据
-                            closest_tris(i, j, k) = triIdx;        // 
+                            SDFvalues(i, j, k) = dis;                
+                            closest_tris(i, j, k) = triIdx;         
                         }
                     }
 
-            // and do intersection counts 
-            j0 = clamp((int)std::ceil(min(vay_sc, vby_sc, vcy_sc)), 0, nj - 1);                // 当前三角片y最小值对应的y栅格下标；
-            j1 = clamp((int)std::floor(max(vay_sc, vby_sc, vcy_sc)), 0, nj - 1);
-            k0 = clamp((int)std::ceil(min(vaz_sc, vbz_sc, vcz_sc)), 0, nk - 1);            // 当前三角片z最小值对应的z栅格下标；
-            k1 = clamp((int)std::floor(max(vaz_sc, vbz_sc, vcz_sc)), 0, nk - 1);
-
-            for (int k = k0; k <= k1; ++k)
-                for (int j = j0; j <= j1; ++j)
+            // 1.4 相交检测： 
+#if 0
+            Xmin = clamp((int)std::ceil(min(Xa, Xb, Xc)), 0, ni - 1);                // 当前三角片y最小值对应的y栅格下标；若超出栅格区域则取栅格边界；
+            Xmax = clamp((int)std::floor(max(Xa, Xb, Xc)), 0, ni - 1);
+            Ymin = clamp((int)std::ceil(min(Ya, Yb, Yc)), 0, nj - 1);               
+            Ymax = clamp((int)std::floor(max(Ya, Yb, Yc)), 0, nj - 1); 
+            for (int i = Xmin; i <= Xmax; ++i)
+                for (int k = Ymin; k <= Ymax; ++k)
                 {
-                    double x_bc, y_bc, z_bc;       // 
-                    if (point_in_triangle_2d(j, k, vay_sc, vaz_sc, vby_sc, vbz_sc, vcy_sc, vcz_sc, x_bc, y_bc, z_bc))
+                    double tmpX, tmpY, tmpZ;       // 
+                    if (point_in_triangle_2d(i, k, Xa, Ya, Xb, Yb, Xc, Yc, tmpX, tmpY, tmpZ))
                     {
                         std::lock_guard<std::mutex> guard(g_mutex);
-                        double fi = x_bc * vax_sc + y_bc * vbx_sc + z_bc * vcx_sc;      // intersection i coordinate
+                        double fi = tmpX * Za + tmpY * Zb + tmpZ * Zc;      // intersection i coordinate
+                        int i_interval = int(std::ceil(fi));               // intersection is in (i_interval-1,i_interval]
+
+                        if (i_interval < 0)
+                            ++intersection_count(0, i, k);              // we enlarge the first interval to include everything to the -vers direction
+                        else if (i_interval < nk)
+                            ++intersection_count(i_interval, i, k);  // we ignore intersections that are beyond the +vers side of the grid
+                    }
+                } 
+#else
+                        // and do intersection counts 
+            Ymin = clamp((int)std::ceil(min(Ya, Yb, Yc)), 0, nj - 1);                // 当前三角片y最小值对应的y栅格下标；
+            Ymax = clamp((int)std::floor(max(Ya, Yb, Yc)), 0, nj - 1);
+            Zmin = clamp((int)std::ceil(min(Za, Zb, Zc)), 0, nk - 1);            // 当前三角片z最小值对应的z栅格下标；
+            Zmax = clamp((int)std::floor(max(Za, Zb, Zc)), 0, nk - 1);
+
+            for (int j = Ymin; j <= Ymax; ++j)
+                for (int k = Zmin; k <= Zmax; ++k)
+                {
+                    double tmpX, tmpY, tmpZ;       // 
+                    if (point_in_triangle_2d(j, k, Ya, Za, Yb, Zb, Yc, Zc, tmpX, tmpY, tmpZ))
+                    {
+                        std::lock_guard<std::mutex> guard(g_mutex);
+                        double fi = tmpX * Xa + tmpY * Xb + tmpZ * Xc;      // intersection i coordinate
                         int i_interval = int(std::ceil(fi));               // intersection is in (i_interval-1,i_interval]
 
                         if (i_interval < 0)
@@ -673,24 +703,26 @@ void foo(const std::vector<Vec3ui>& tris, const std::vector<Vec3f>& vers,
                             ++intersection_count(i_interval, j, k);  // we ignore intersections that are beyond the +vers side of the grid
                     }
                 }
+#endif
         });
-
     tt.endCout("elapsed time of step1: ");
 
-    // 2. and now we fill in the rest of the distances with fast sweeping
+    // 2. 看不懂，好像没什么屌用；and now we fill in the rest of the distances with fast sweeping
+#if 0
     tt.start();
-    for (unsigned int pass = 0; pass < 2; ++pass)
+    for (unsigned int i = 0; i < 2; ++i)
     {
-        sweep(tris, vers, DFvalues, closest_tris, startPos, step, +1, +1, +1);
-        sweep(tris, vers, DFvalues, closest_tris, startPos, step, -1, -1, -1);
-        sweep(tris, vers, DFvalues, closest_tris, startPos, step, +1, +1, -1);
-        sweep(tris, vers, DFvalues, closest_tris, startPos, step, -1, -1, +1);
-        sweep(tris, vers, DFvalues, closest_tris, startPos, step, +1, -1, +1);
-        sweep(tris, vers, DFvalues, closest_tris, startPos, step, -1, +1, -1);
-        sweep(tris, vers, DFvalues, closest_tris, startPos, step, +1, -1, -1);
-        sweep(tris, vers, DFvalues, closest_tris, startPos, step, -1, +1, +1);
+        sweep(tris, vers, SDFvalues, closest_tris, startPos, step, +1, +1, +1);
+        sweep(tris, vers, SDFvalues, closest_tris, startPos, step, -1, -1, -1);
+        sweep(tris, vers, SDFvalues, closest_tris, startPos, step, +1, +1, -1);
+        sweep(tris, vers, SDFvalues, closest_tris, startPos, step, -1, -1, +1);
+        sweep(tris, vers, SDFvalues, closest_tris, startPos, step, +1, -1, +1);
+        sweep(tris, vers, SDFvalues, closest_tris, startPos, step, -1, +1, -1);
+        sweep(tris, vers, SDFvalues, closest_tris, startPos, step, +1, -1, -1);
+        sweep(tris, vers, SDFvalues, closest_tris, startPos, step, -1, +1, +1);
     }
     tt.endCout("elapsed time of step2: ");
+#endif
 
     // 3. 符号判断；then figure out signs (inside/outside) from intersection counts
     tt.start();
@@ -706,7 +738,7 @@ void foo(const std::vector<Vec3ui>& tris, const std::vector<Vec3f>& vers,
                     if (total_count % 2 == 1)                            // if parity of intersections so far is odd,
                     {
                         std::lock_guard<std::mutex> guard(g_mutex);
-                        DFvalues(i, j, k) = -DFvalues(i, j, k);            // we are inside the mesh
+                        SDFvalues(i, j, k) = -SDFvalues(i, j, k);            // we are inside the mesh
                     }
                 }
             }
@@ -723,7 +755,12 @@ void test3()
     int interCounts = 3;              // 参数3——设定的采样空间边界到网格包围盒的最小距离，用步数表示，最小为1；
     std::vector<Vec3f> vers;
     std::vector<Vec3ui> tris;
+    Eigen::MatrixXf versIn;
+    Eigen::MatrixXi trisIn;
     readOBJ(vers, tris, "E:/材料/tooth.obj");
+    versIn = vers2mat(vers);
+    trisIn = tris2mat(tris);
+    debugWriteMesh("meshInput", versIn, trisIn);
 
     // 2. 生成包围盒数据：
     Vec3f min_box(std::numeric_limits<float>::max(), std::numeric_limits<float>::max(), \
@@ -744,14 +781,14 @@ void test3()
 
     // 3. 计算距离场：
     SDF_GEN::Array3f DFvalues_grid;
-    foo(tris, vers, min_box, step, sizes[0], sizes[1], sizes[2], DFvalues_grid);
+    calcSDF(tris, vers, min_box, step, sizes[0], sizes[1], sizes[2], DFvalues_grid);
 
     // 4. 生成距离场小于0的点云——距离场数据按照x优先y其次z最后的顺序存储，即按数组索引增大方向存储的是f(0, 0, 0), f(1, 0, 0), f(2, 0, 0)... f(0, 1, 0), f(1, 1, 0) ..f(0, 0, 1), f(1, 0, 1), ..
     std::list<Vec3f> versList;
     for (unsigned i = 0; i < DFvalues_grid.nk; ++i)
         for (unsigned j = 0; j < DFvalues_grid.nj; ++j)
             for (unsigned k = 0; k < DFvalues_grid.nk; ++k)
-                if (DFvalues_grid(i, j, k) <= 0)
+                if (DFvalues_grid(i, j, k) >= 0 && DFvalues_grid(i, j, k) <= 0.2)
                     versList.push_back(Vec3f{ min_box[0] + i * step, min_box[1] + j * step, min_box[2] + k * step });
 
     // 5. 写输出数据

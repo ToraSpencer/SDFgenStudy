@@ -166,6 +166,8 @@ inline void sort(T &a, T &b, T &c)
    }
 }
 
+
+// clamp()——返回三个数中，按大小排列，中间的那个数
 template<class T>
 inline T clamp(T a, T lower, T upper)
 {
@@ -177,6 +179,7 @@ inline T clamp(T a, T lower, T upper)
        return a;
 }
 
+
 // only makes sense with T=float or double
 template<class T>
 inline T smooth_step(T r)
@@ -186,15 +189,18 @@ inline T smooth_step(T r)
    return r*r*r*(10+r*(-15+r*6));
 }
 
+
 // only makes sense with T=float or double
 template<class T>
 inline T smooth_step(T r, T r_lower, T r_upper, T value_lower, T value_upper)
 { return value_lower + smooth_step((r-r_lower)/(r_upper-r_lower)) * (value_upper-value_lower); }
 
+
 // only makes sense with T=float or double
 template<class T>
 inline T ramp(T r)
 { return smooth_step((r+1)/2)*2-1; }
+
 
 #ifdef WIN32
 inline int lround(double x)
