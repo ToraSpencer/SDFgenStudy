@@ -368,9 +368,12 @@ int test0(int argc, char* argv[])
 // 手动读取文件计算距离场：
 int test1(int argc, char* argv[])
 {
+    tiktok& tt = tiktok::getInstance();
+    tt.start();
+
     // 参数1——网格文件地址
     std::string filePath("E:/材料/");
-    std::string filename("tooth.obj");
+    std::string filename("jawMeshDense.obj");
     if (filename.size() < 5 || filename.substr(filename.size() - 4) != std::string(".obj"))
     {
         std::cerr << "Error: Expected OBJ file with filename of the form <name>.obj.\n";
@@ -378,7 +381,7 @@ int test1(int argc, char* argv[])
     }
 
     // 参数2—— 距离场采样步长(grid cell) 
-    float step = 0.5;
+    float step = 0.25;
 
     // 参数3——设定的采样空间边界到网格包围盒的最小距离，用步数表示，最小为1；
     int interCounts = 3;
@@ -438,7 +441,6 @@ int test1(int argc, char* argv[])
 
 
     // 2. 生成采样点；
-
     Vec3f unit(1, 1, 1);
     //      包围盒增加空隙的尺寸，生成坐标栅格；
     min_box -= interCounts * step * unit;                       // 坐标栅格的起点坐标；
@@ -449,11 +451,11 @@ int test1(int argc, char* argv[])
     // 3. 计算距离场：
     SDF_GEN::Array3f DFvalues_grid;
     make_level_set3(tris, vers, min_box, step, sizes[0], sizes[1], sizes[2], DFvalues_grid);
-
-    std::string outname;
-    outname = std::string{"E:/"} + filename.substr(0, filename.size() - 4) + std::string(".sdf");
+    tt.endCout("读网格、计算距离场耗时：");
 
     // 写输出数据——距离场数据按照x优先y其次z最后的顺序存储，即按数组索引增大方向存储的是f(0, 0, 0), f(1, 0, 0), f(2, 0, 0)... f(0, 1, 0), f(1, 1, 0) ..f(0, 0, 1), f(1, 0, 1), ..
+    std::string outname;
+    outname = std::string{ "E:/" } + filename.substr(0, filename.size() - 4) + std::string(".sdf");
     std::ofstream outfile(outname.c_str());
     outfile << DFvalues_grid.ni << " " << DFvalues_grid.nj << " " << DFvalues_grid.nk << std::endl;        // 第一行：
     outfile << min_box[0] << " " << min_box[1] << " " << min_box[2] << std::endl;   // 第二行：
@@ -626,8 +628,7 @@ void calcSDF(const std::vector<Vec3ui>& tris, const std::vector<Vec3f>& vers,
     // we begin by initializing distances near the mesh, and figuring out intersection counts
 
     // 1. 对三角片的遍历
-    tiktok& tt = tiktok::getInstance();
-    tt.start();
+    tiktok& tt = tiktok::getInstance(); 
     PARALLEL_FOR(0, tris.size(), [&](unsigned triIdx)
         {
             unsigned int vaIdx, vbIdx, vcIdx;                  // 当前三角片的三个顶点索引；
@@ -658,54 +659,30 @@ void calcSDF(const std::vector<Vec3ui>& tris, const std::vector<Vec3f>& vers,
                         }
                     }
 
-            // 1.4 相交检测： 
-#if 0
+            // 1.4 相交检测：  
             Xmin = clamp((int)std::ceil(min(Xa, Xb, Xc)), 0, ni - 1);                // 当前三角片y最小值对应的y栅格下标；若超出栅格区域则取栅格边界；
             Xmax = clamp((int)std::floor(max(Xa, Xb, Xc)), 0, ni - 1);
             Ymin = clamp((int)std::ceil(min(Ya, Yb, Yc)), 0, nj - 1);               
             Ymax = clamp((int)std::floor(max(Ya, Yb, Yc)), 0, nj - 1); 
-            for (int i = Xmin; i <= Xmax; ++i)
-                for (int k = Ymin; k <= Ymax; ++k)
+            //      遍历分析当前三角片在每个XOY平面上的投影；相当于做射线检测（Z方向的射线），确定射线和当前三角片的交点在哪个栅格；
+            for (int Xp = Xmin; Xp <= Xmax; ++Xp)
+                for (int Yp = Ymin; Yp <= Ymax; ++Yp)              
                 {
-                    double tmpX, tmpY, tmpZ;       // 
-                    if (point_in_triangle_2d(i, k, Xa, Ya, Xb, Yb, Xc, Yc, tmpX, tmpY, tmpZ))
+                    // 相当于做射线检测，当前射线为经过点(Xp, Yp, 0), 方向平行于Z方向的直线；
+                    double alpha, beta, gamma;                       // 当前栅格点在投影三角片中的重心坐标；
+                    if (point_in_triangle_2d(Xp, Yp, Xa, Ya, Xb, Yb, Xc, Yc, alpha, beta, gamma))
                     {
                         std::lock_guard<std::mutex> guard(g_mutex);
-                        double fi = tmpX * Za + tmpY * Zb + tmpZ * Zc;      // intersection i coordinate
-                        int i_interval = int(std::ceil(fi));               // intersection is in (i_interval-1,i_interval]
+                        double Z_isct = alpha * Za + beta * Zb + gamma * Zc;      // 射线交点的z坐标（栅格坐标系）；
+                        int Zp = int(std::ceil(Z_isct));                                                // intersection is in (Zp-1,Zp]
 
-                        if (i_interval < 0)
-                            ++intersection_count(0, i, k);              // we enlarge the first interval to include everything to the -vers direction
-                        else if (i_interval < nk)
-                            ++intersection_count(i_interval, i, k);  // we ignore intersections that are beyond the +vers side of the grid
+                        if (Zp < 0)
+                            ++intersection_count(Xp, Yp, 0);    // we enlarge the first interval to include everything to the -vers direction
+                        else if (Zp < nk)
+                            ++intersection_count(Xp, Yp, Zp);  // we ignore intersections that are beyond the +vers side of the grid
                     }
-                } 
-#else
-                        // and do intersection counts 
-            Ymin = clamp((int)std::ceil(min(Ya, Yb, Yc)), 0, nj - 1);                // 当前三角片y最小值对应的y栅格下标；
-            Ymax = clamp((int)std::floor(max(Ya, Yb, Yc)), 0, nj - 1);
-            Zmin = clamp((int)std::ceil(min(Za, Zb, Zc)), 0, nk - 1);            // 当前三角片z最小值对应的z栅格下标；
-            Zmax = clamp((int)std::floor(max(Za, Zb, Zc)), 0, nk - 1);
-
-            for (int j = Ymin; j <= Ymax; ++j)
-                for (int k = Zmin; k <= Zmax; ++k)
-                {
-                    double tmpX, tmpY, tmpZ;       // 
-                    if (point_in_triangle_2d(j, k, Ya, Za, Yb, Zb, Yc, Zc, tmpX, tmpY, tmpZ))
-                    {
-                        std::lock_guard<std::mutex> guard(g_mutex);
-                        double fi = tmpX * Xa + tmpY * Xb + tmpZ * Xc;      // intersection i coordinate
-                        int i_interval = int(std::ceil(fi));               // intersection is in (i_interval-1,i_interval]
-
-                        if (i_interval < 0)
-                            ++intersection_count(0, j, k);          // we enlarge the first interval to include everything to the -vers direction
-                        else if (i_interval < ni)
-                            ++intersection_count(i_interval, j, k);  // we ignore intersections that are beyond the +vers side of the grid
-                    }
-                }
-#endif
-        });
-    tt.endCout("elapsed time of step1: ");
+                }  
+        }); 
 
     // 2. 看不懂，好像没什么屌用；and now we fill in the rest of the distances with fast sweeping
 #if 0
@@ -724,26 +701,26 @@ void calcSDF(const std::vector<Vec3ui>& tris, const std::vector<Vec3f>& vers,
     tt.endCout("elapsed time of step2: ");
 #endif
 
-    // 3. 符号判断；then figure out signs (inside/outside) from intersection counts
-    tt.start();
-    PARALLEL_FOR(0, nk, [&](int k)
+    // 3. 符号判断；then figure out signs (inside/outside) from intersection counts 
+    PARALLEL_FOR(0, ni, [&](int i)
         {
             for (int j = 0; j < nj; ++j)
             {
                 int total_count = 0;
-                // 平行x轴方向上遍历一条直线上的栅格，通过交点数来确定距离场值的符号；
-                for (int i = 0; i < ni; ++i)
+                // 平行z轴方向上遍历一条直线上的栅格，通过交点数来确定距离场值的符号；
+                for (int k = 0; k < nk; ++k)
                 {
+                    // 在起点k == 0上，采样点必然在网格外，随着采样点沿着z轴上升，累计交点+1则表示进入网格，再+1表示出网格，以此类推
                     total_count += intersection_count(i, j, k);
-                    if (total_count % 2 == 1)                            // if parity of intersections so far is odd,
+                    if (total_count % 2 == 1)                                    // 若该栅格内交点数为奇数，则该栅格在网格内；
                     {
                         std::lock_guard<std::mutex> guard(g_mutex);
                         SDFvalues(i, j, k) = -SDFvalues(i, j, k);            // we are inside the mesh
                     }
                 }
             }
-        });
-    tt.endCout("elapsed time of step3: ");
+        }); 
+     
 }
 
 
@@ -751,18 +728,23 @@ void calcSDF(const std::vector<Vec3ui>& tris, const std::vector<Vec3f>& vers,
 void test3()
 {
     // 1. 读取网格数据：
+    tiktok& tt = tiktok::getInstance();
+    tt.start();
     float step = 0.5;                    // 参数2—— 距离场采样步长(grid cell) 
     int interCounts = 3;              // 参数3——设定的采样空间边界到网格包围盒的最小距离，用步数表示，最小为1；
     std::vector<Vec3f> vers;
     std::vector<Vec3ui> tris;
     Eigen::MatrixXf versIn;
     Eigen::MatrixXi trisIn;
-    readOBJ(vers, tris, "E:/材料/tooth.obj");
+    DWORD tikCount = 0;
+    readOBJ(vers, tris, "E:/材料/jawMesh.obj");
     versIn = vers2mat(vers);
     trisIn = tris2mat(tris);
+    tikCount += tt.endGetCount();
     debugWriteMesh("meshInput", versIn, trisIn);
 
     // 2. 生成包围盒数据：
+    tt.start();
     Vec3f min_box(std::numeric_limits<float>::max(), std::numeric_limits<float>::max(), \
         std::numeric_limits<float>::max()), \
         max_box(-std::numeric_limits<float>::max(), \
@@ -782,6 +764,8 @@ void test3()
     // 3. 计算距离场：
     SDF_GEN::Array3f DFvalues_grid;
     calcSDF(tris, vers, min_box, step, sizes[0], sizes[1], sizes[2], DFvalues_grid);
+    tikCount += tt.endGetCount();
+    debugDisp("SDFGen：读网格+计算SDF总耗时：", tikCount);
 
     // 4. 生成距离场小于0的点云——距离场数据按照x优先y其次z最后的顺序存储，即按数组索引增大方向存储的是f(0, 0, 0), f(1, 0, 0), f(2, 0, 0)... f(0, 1, 0), f(1, 1, 0) ..f(0, 0, 1), f(1, 0, 1), ..
     std::list<Vec3f> versList;
@@ -824,11 +808,6 @@ int main(int argc, char* argv[])
 {
     // test1(argc, argv);
     test3();
-    
-    //Eigen::MatrixXd vers;
-    //objReadVerticesMat(vers, "E:/材料/loop2D.obj");
-    //Eigen::MatrixXi edges = getLoopEdges(vers.rows());
-    //debugWriteEdges("loopEdges", edges, vers);
 
     debugDisp("main() finished.");
  

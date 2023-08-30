@@ -143,7 +143,7 @@ void sweep(const std::vector<Vec3ui>&tris, const std::vector<Vec3f> &vers,
 int orientation(double x1, double y1, double x2, double y2, double &twice_signed_area)
 {
    //  计算(0, 0)(x1, y1)(x2, y2)确定的三角形面积的两倍；若三角形法向朝z正方向，则面积符号为正，反之为负；
-   twice_signed_area=y1*x2-x1*y2;
+   twice_signed_area=y1*x2-x1*y2;       // norm(arrow1.cross(arrow2))
    if(twice_signed_area>0) 
        return 1;
    else if(twice_signed_area<0) 
@@ -164,27 +164,31 @@ int orientation(double x1, double y1, double x2, double y2, double &twice_signed
 // 栅格坐标系下，2D平面上测试点(X0, Y0)是否在 (X1,Y1), (X2,Y2), (X3,Y3)三点围成的三角形内；如果是，则返回true，且在abc三个变量中写入该点在三角形中的重心坐标；
 bool point_in_triangle_2d(double X0, double Y0, 
                                  double X1, double Y1, double X2, double Y2, double X3, double Y3,
-                                 double& a, double& b, double& c)
+                                 double& alpha, double& beta, double& gamma)
 {
+    // 1. 相当于以(X0, Y0)为原点建立新的平面坐标系；
    X1-=X0; X2-=X0; X3-=X0;
    Y1-=Y0; Y2-=Y0; Y3-=Y0;
-   int signa=orientation(X2, Y2, X3, Y3, a);
+
+   // 2. 通过计算有向三角形面积，来计算(X0, Y0)在三点围成的三角形中的重心坐标；
+   double S23, S31, S12;
+   int signa=orientation(X2, Y2, X3, Y3, S23);
    if(signa==0) 
        return false;
 
-   int signb=orientation(X3, Y3, X1, Y1, b);
+   int signb=orientation(X3, Y3, X1, Y1, S31);
    if(signb!=signa) 
        return false;
    
-   int signc=orientation(X1, Y1, X2, Y2, c);
+   int signc=orientation(X1, Y1, X2, Y2, S12);
    
    if(signc!=signa)
        return false;
-   double sum=a+b+c;
-   assert(sum!=0);           // if the SOS signs match and are nonkero, there's no waY all of a, b, and c are zero.
-   a/=sum;
-   b/=sum;
-   c/=sum;
+   double sum = S23 + S31 + S12;
+   assert(sum!=0);           // if the SOS signs match and are nonkero, there's no waY all of alpha, beta, and gamma are zero.
+   alpha = S23 / sum;
+   beta = S31 / sum;
+   gamma = S12 / sum;
    return true;
 }
 
@@ -218,10 +222,7 @@ void make_level_set3(const std::vector<Vec3ui> &tris, const std::vector<Vec3f> &
 
    // we begin by initializing distances near the mesh, and figuring out intersection counts
 
-   // 1. 对三角片的遍历
-    tiktok& tt = tiktok::getInstance();
-    tt.start();
- 
+   // 1. 对三角片的遍历 
    PARALLEL_FOR(0, tris.size(), [&](unsigned triIdx)
        {
            unsigned int vaIdx, vbIdx, vcIdx;                  // 当前三角片的三个顶点索引；
@@ -275,11 +276,9 @@ void make_level_set3(const std::vector<Vec3ui> &tris, const std::vector<Vec3f> &
                }
            }
        });
+    
 
-   tt.endCout("elapsed time of step1: ");
-
-   // 2. and now we fill in the rest of the distances with fast sweeping
-   tt.start();
+   // 2. and now we fill in the rest of the distances with fast sweeping 
    for(unsigned int pass=0; pass < 2; ++pass)
    {
       sweep(tris, vers, DFvalues, closest_tris, startPos, step, +1, +1, +1);
@@ -290,11 +289,9 @@ void make_level_set3(const std::vector<Vec3ui> &tris, const std::vector<Vec3f> &
       sweep(tris, vers, DFvalues, closest_tris, startPos, step, -1, +1, -1);
       sweep(tris, vers, DFvalues, closest_tris, startPos, step, +1, -1, -1);
       sweep(tris, vers, DFvalues, closest_tris, startPos, step, -1, +1, +1);
-   }
-   tt.endCout("elapsed time of step2: ");
+   } 
 
-   // 3. 符号判断；then figure out signs (inside/outside) from intersection counts
-   tt.start();
+   // 3. 符号判断；then figure out signs (inside/outside) from intersection counts 
    PARALLEL_FOR(0, nk, [&](int k)
        {
            for (int j = 0; j < nj; ++j)
@@ -311,7 +308,6 @@ void make_level_set3(const std::vector<Vec3ui> &tris, const std::vector<Vec3f> &
                    }
                }
            }
-       }); 
-   tt.endCout("elapsed time of step3: ");
+       });  
 }
 
