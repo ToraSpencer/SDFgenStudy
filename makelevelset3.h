@@ -36,11 +36,11 @@ float point_segment_distance(const Vec3f& x0, const Vec3f& x1, const Vec3f& x2);
 float point_triangle_distance(const Vec3f& x0, const Vec3f& x1, const Vec3f& x2, const Vec3f& x3);
 
 void check_neighbour(const std::vector<Vec3ui>& tris, const std::vector<Vec3f>& vers,
-    SDF_GEN::Array3f& DFvalues, SDF_GEN::Array3i& closest_tris,
+    SDF_GEN::Array3f& SDFvalues, SDF_GEN::Array3i& closest_tris,
     const Vec3f& ver0, const int i0, const int j0, const int k0, const int i1, const int j1, const int k1);
 
 void sweep(const std::vector<Vec3ui>& tris, const std::vector<Vec3f>& vers,
-    SDF_GEN::Array3f& DFvalues, SDF_GEN::Array3i& closest_tris, const Vec3f& origin, const float step,
+    SDF_GEN::Array3f& SDFvalues, SDF_GEN::Array3i& closest_tris, const Vec3f& origin, const float step,
     const int di, const int const dj, const int dk);
 
 int orientation(double x1, double y1, double x2, double y2, double& twice_signed_area);

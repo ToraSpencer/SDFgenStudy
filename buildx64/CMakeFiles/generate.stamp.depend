@@ -89,9 +89,9 @@ C:/Program Files/CMake/share/cmake-3.21/Modules/Platform/Windows-MSVC-CXX.cmake
 C:/Program Files/CMake/share/cmake-3.21/Modules/Platform/Windows-MSVC.cmake
 C:/Program Files/CMake/share/cmake-3.21/Modules/Platform/Windows.cmake
 C:/Program Files/CMake/share/cmake-3.21/Modules/Platform/WindowsPaths.cmake
-G:/gitRepositories/SDFGen-master/CMakeLists.txt
-G:/gitRepositories/SDFGen-master/buildx64/CMakeFiles/3.21.0-rc2/CMakeCCompiler.cmake
-G:/gitRepositories/SDFGen-master/buildx64/CMakeFiles/3.21.0-rc2/CMakeCXXCompiler.cmake
-G:/gitRepositories/SDFGen-master/buildx64/CMakeFiles/3.21.0-rc2/CMakeRCCompiler.cmake
-G:/gitRepositories/SDFGen-master/buildx64/CMakeFiles/3.21.0-rc2/CMakeSystem.cmake
-G:/gitRepositories/SDFGen-master/config.h.in
+G:/gitRepositories/SDFGen_study/CMakeLists.txt
+G:/gitRepositories/SDFGen_study/buildx64/CMakeFiles/3.21.0-rc2/CMakeCCompiler.cmake
+G:/gitRepositories/SDFGen_study/buildx64/CMakeFiles/3.21.0-rc2/CMakeCXXCompiler.cmake
+G:/gitRepositories/SDFGen_study/buildx64/CMakeFiles/3.21.0-rc2/CMakeRCCompiler.cmake
+G:/gitRepositories/SDFGen_study/buildx64/CMakeFiles/3.21.0-rc2/CMakeSystem.cmake
+G:/gitRepositories/SDFGen_study/config.h.in

@@ -59,25 +59,25 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup>
     <_ProjectFileVersion>10.0.20506.1</_ProjectFileVersion>
-    <OutDir Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">G:\gitRepositories\SDFGen-master\buildx64\bin\Debug\</OutDir>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">G:\gitRepositories\SDFGen_study\buildx64\bin\Debug\</OutDir>
     <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">SDFGen.dir\Debug\</IntDir>
     <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">SDFGen</TargetName>
     <TargetExt Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">.exe</TargetExt>
     <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</LinkIncremental>
     <GenerateManifest Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</GenerateManifest>
-    <OutDir Condition="'$(Configuration)|$(Platform)'=='Release|x64'">G:\gitRepositories\SDFGen-master\buildx64\bin\Release\</OutDir>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Release|x64'">G:\gitRepositories\SDFGen_study\buildx64\bin\Release\</OutDir>
     <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|x64'">SDFGen.dir\Release\</IntDir>
     <TargetName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">SDFGen</TargetName>
     <TargetExt Condition="'$(Configuration)|$(Platform)'=='Release|x64'">.exe</TargetExt>
     <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</LinkIncremental>
     <GenerateManifest Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</GenerateManifest>
-    <OutDir Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">G:\gitRepositories\SDFGen-master\buildx64\bin\MinSizeRel\</OutDir>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">G:\gitRepositories\SDFGen_study\buildx64\bin\MinSizeRel\</OutDir>
     <IntDir Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">SDFGen.dir\MinSizeRel\</IntDir>
     <TargetName Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">SDFGen</TargetName>
     <TargetExt Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">.exe</TargetExt>
     <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">false</LinkIncremental>
     <GenerateManifest Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">true</GenerateManifest>
-    <OutDir Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">G:\gitRepositories\SDFGen-master\buildx64\bin\RelWithDebInfo\</OutDir>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">G:\gitRepositories\SDFGen_study\buildx64\bin\RelWithDebInfo\</OutDir>
     <IntDir Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">SDFGen.dir\RelWithDebInfo\</IntDir>
     <TargetName Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">SDFGen</TargetName>
     <TargetExt Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">.exe</TargetExt>
@@ -113,6 +113,7 @@
       <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_DEBUG;CMAKE_INTDIR=\"Debug\"</PreprocessorDefinitions>
@@ -131,8 +132,8 @@
       <AdditionalOptions>%(AdditionalOptions) /machine:x64</AdditionalOptions>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <IgnoreSpecificDefaultLibraries>%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
-      <ImportLibrary>G:/gitRepositories/SDFGen-master/buildx64/bin/Debug/SDFGen.lib</ImportLibrary>
-      <ProgramDataBaseFile>G:/gitRepositories/SDFGen-master/buildx64/bin/Debug/SDFGen.pdb</ProgramDataBaseFile>
+      <ImportLibrary>G:/gitRepositories/SDFGen_study/buildx64/bin/Debug/SDFGen.lib</ImportLibrary>
+      <ProgramDataBaseFile>G:/gitRepositories/SDFGen_study/buildx64/bin/Debug/SDFGen.pdb</ProgramDataBaseFile>
       <SubSystem>Console</SubSystem>
     </Link>
     <ProjectReference>
@@ -169,8 +170,8 @@
       <AdditionalOptions>%(AdditionalOptions) /machine:x64</AdditionalOptions>
       <GenerateDebugInformation>false</GenerateDebugInformation>
       <IgnoreSpecificDefaultLibraries>%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
-      <ImportLibrary>G:/gitRepositories/SDFGen-master/buildx64/bin/Release/SDFGen.lib</ImportLibrary>
-      <ProgramDataBaseFile>G:/gitRepositories/SDFGen-master/buildx64/bin/Release/SDFGen.pdb</ProgramDataBaseFile>
+      <ImportLibrary>G:/gitRepositories/SDFGen_study/buildx64/bin/Release/SDFGen.lib</ImportLibrary>
+      <ProgramDataBaseFile>G:/gitRepositories/SDFGen_study/buildx64/bin/Release/SDFGen.pdb</ProgramDataBaseFile>
       <SubSystem>Console</SubSystem>
     </Link>
     <ProjectReference>
@@ -210,8 +211,8 @@
       <AdditionalOptions>%(AdditionalOptions) /machine:x64</AdditionalOptions>
       <GenerateDebugInformation>false</GenerateDebugInformation>
       <IgnoreSpecificDefaultLibraries>%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
-      <ImportLibrary>G:/gitRepositories/SDFGen-master/buildx64/bin/MinSizeRel/SDFGen.lib</ImportLibrary>
-      <ProgramDataBaseFile>G:/gitRepositories/SDFGen-master/buildx64/bin/MinSizeRel/SDFGen.pdb</ProgramDataBaseFile>
+      <ImportLibrary>G:/gitRepositories/SDFGen_study/buildx64/bin/MinSizeRel/SDFGen.lib</ImportLibrary>
+      <ProgramDataBaseFile>G:/gitRepositories/SDFGen_study/buildx64/bin/MinSizeRel/SDFGen.pdb</ProgramDataBaseFile>
       <SubSystem>Console</SubSystem>
     </Link>
     <ProjectReference>
@@ -250,8 +251,8 @@
       <AdditionalOptions>%(AdditionalOptions) /machine:x64</AdditionalOptions>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <IgnoreSpecificDefaultLibraries>%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
-      <ImportLibrary>G:/gitRepositories/SDFGen-master/buildx64/bin/RelWithDebInfo/SDFGen.lib</ImportLibrary>
-      <ProgramDataBaseFile>G:/gitRepositories/SDFGen-master/buildx64/bin/RelWithDebInfo/SDFGen.pdb</ProgramDataBaseFile>
+      <ImportLibrary>G:/gitRepositories/SDFGen_study/buildx64/bin/RelWithDebInfo/SDFGen.lib</ImportLibrary>
+      <ProgramDataBaseFile>G:/gitRepositories/SDFGen_study/buildx64/bin/RelWithDebInfo/SDFGen.pdb</ProgramDataBaseFile>
       <SubSystem>Console</SubSystem>
     </Link>
     <ProjectReference>
@@ -260,11 +261,11 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\..\Eigen-libiglStudy\myEigen.cpp" />
-    <ClCompile Include="G:\gitRepositories\SDFGen-master\main.cpp" />
-    <ClCompile Include="G:\gitRepositories\SDFGen-master\makelevelset3.cpp" />
+    <ClCompile Include="G:\gitRepositories\SDFGen_study\main.cpp" />
+    <ClCompile Include="G:\gitRepositories\SDFGen_study\makelevelset3.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="G:\gitRepositories\SDFGen-master\buildx64\ZERO_CHECK.vcxproj">
+    <ProjectReference Include="G:\gitRepositories\SDFGen_study\buildx64\ZERO_CHECK.vcxproj">
       <Project>{1931AEDF-7B2D-3FE6-8A4F-EF7DFF6F3B0D}</Project>
       <Name>ZERO_CHECK</Name>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
