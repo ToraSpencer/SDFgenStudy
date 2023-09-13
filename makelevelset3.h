@@ -11,7 +11,19 @@
 #include <thread>
 #include <mutex>
 
-#include "myEigen.h"
+// 静态库：
+#include "myEigenIO/myEigenIO.h"
+#pragma comment(lib,"myEigenIO.lib")	
+
+#include "myEigenBasicMath/myEigenBasicMath.h"
+#pragma comment(lib, "myEigenBasicMath.lib")
+
+#include "myEigenModeling/myEigenModeling.h"
+#pragma comment(lib, "myEigenModeling.lib")
+
+#include "myEigenPMP/myEigenPMP.h"
+#pragma comment(lib, "myEigenPMP.lib")
+
 
 #define USE_MULTITHREADS
 
@@ -49,23 +61,6 @@ bool point_in_triangle_2d(double x0, double y0,
     double x1, double y1, double x2, double y2, double x3, double y3,
     double& a, double& b, double& c);
 
-
-
-///////////////////////////////////////////////////////////////////// 一些debug接口：
-  
-// 打印三维矩阵的某一层切面：
-template <typename T, class ArrayT = std::vector<T>>
-void dispArrSlice(const SDF_GEN::Array3<T, ArrayT>& arr, const int k)
-{
-    for (unsigned i = 0; i<arr.ni; ++i) 
-    {
-        for (unsigned j = 0; j < arr.nj; ++j)
-            std::cout << arr(i, j, k) << ", ";
-        std::cout << std::endl;
-    }
-}
-
-
-
+ 
 
 #endif

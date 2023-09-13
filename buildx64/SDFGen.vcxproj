@@ -85,20 +85,20 @@
     <GenerateManifest Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">true</GenerateManifest>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>G:\gitRepositories\Eigen-libiglStudy;$(VC_IncludePath);$(WindowsSDK_IncludePath);$(SolutionDir)../../Eigen-libiglStudy/;$(SolutionDir)../../libigl_CGAL_openGL/external/eigen</IncludePath>
-    <LibraryPath>G:\gitRepositories\Eigen-libiglStudy\$(Platform)\$(Configuration)\;$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64)</LibraryPath>
+    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);$(SolutionDir)../../Eigen-libiglStudy/</IncludePath>
+    <LibraryPath>$(SolutionDir)../../Eigen-libiglStudy/$(Platform)\$(Configuration)\;$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">
-    <IncludePath>G:\gitRepositories\Eigen-libiglStudy;$(VC_IncludePath);$(WindowsSDK_IncludePath);$(SolutionDir)../../Eigen-libiglStudy/;$(SolutionDir)../../libigl_CGAL_openGL/external/eigen</IncludePath>
-    <LibraryPath>G:\gitRepositories\Eigen-libiglStudy\$(Platform)\$(Configuration)\;$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64)</LibraryPath>
+    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);$(SolutionDir)../../Eigen-libiglStudy/</IncludePath>
+    <LibraryPath>$(SolutionDir)../../Eigen-libiglStudy/$(Platform)\$(Configuration)\;$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <IncludePath>G:\gitRepositories\Eigen-libiglStudy;$(VC_IncludePath);$(WindowsSDK_IncludePath);$(SolutionDir)../../Eigen-libiglStudy/;$(SolutionDir)../../libigl_CGAL_openGL/external/eigen</IncludePath>
-    <LibraryPath>G:\gitRepositories\Eigen-libiglStudy\$(Platform)\$(Configuration)\;$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64)</LibraryPath>
+    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);$(SolutionDir)../../Eigen-libiglStudy/</IncludePath>
+    <LibraryPath>$(SolutionDir)../../Eigen-libiglStudy/$(Platform)\$(Configuration)\;$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">
-    <IncludePath>G:\gitRepositories\Eigen-libiglStudy;$(VC_IncludePath);$(WindowsSDK_IncludePath);$(SolutionDir)../../Eigen-libiglStudy/;$(SolutionDir)../../libigl_CGAL_openGL/external/eigen</IncludePath>
-    <LibraryPath>G:\gitRepositories\Eigen-libiglStudy\$(Platform)\$(Configuration)\;$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64)</LibraryPath>
+    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);$(SolutionDir)../../Eigen-libiglStudy/</IncludePath>
+    <LibraryPath>$(SolutionDir)../../Eigen-libiglStudy/$(Platform)\$(Configuration)\;$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -260,7 +260,6 @@
     </ProjectReference>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\Eigen-libiglStudy\myEigen.cpp" />
     <ClCompile Include="G:\gitRepositories\SDFGen_study\main.cpp" />
     <ClCompile Include="G:\gitRepositories\SDFGen_study\makelevelset3.cpp" />
   </ItemGroup>
@@ -273,16 +272,7 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\Eigen-libiglStudy\myEigen.h" />
-    <ClInclude Include="..\array1.h" />
-    <ClInclude Include="..\array2.h" />
-    <ClInclude Include="..\array3.h" />
-    <ClInclude Include="..\config.h" />
-    <ClInclude Include="..\hashgrid.h" />
-    <ClInclude Include="..\hashtable.h" />
     <ClInclude Include="..\makelevelset3.h" />
-    <ClInclude Include="..\util.h" />
-    <ClInclude Include="..\vec.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

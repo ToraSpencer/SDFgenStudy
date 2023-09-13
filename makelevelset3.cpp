@@ -48,32 +48,35 @@ float point_triangle_distance(const Vec3f &p0, const Vec3f &p1, const Vec3f &p2,
 }
 
 
-void check_neighbour(const std::vector<Vec3ui> &tris, const std::vector<Vec3f> &vers,
+// 
+void check_neighbour(const std::vector<Vec3ui>& tris, const std::vector<Vec3f>& vers,
                  SDF_GEN::Array3f &SDFvalues, SDF_GEN::Array3i &closest_tris,
-                 const Vec3f &ver0, const int i0, const int j0, const int k0, const int i1, const int j1, const int k1)
+                 const Vec3f &ver0, const int i0, const int j0, const int k0, \
+                 const int i1, const int j1, const int k1)
 {
-   if(closest_tris(i1, j1, k1) >= 0)
-   {
-      unsigned int vaIdx, vbIdx, vcIdx;
-      const Vec3ui& tri = tris[closest_tris(i1, j1, k1)];
-      assign(tri, vaIdx, vbIdx, vcIdx);
-      float d = point_triangle_distance(ver0, vers[vaIdx], vers[vbIdx], vers[vcIdx]);
+       if(closest_tris(i1, j1, k1) >= 0)
+       {
+          unsigned int vaIdx, vbIdx, vcIdx;
+          const Vec3ui& tri = tris[closest_tris(i1, j1, k1)];
+          assign(tri, vaIdx, vbIdx, vcIdx);
+          float d = point_triangle_distance(ver0, vers[vaIdx], vers[vbIdx], vers[vcIdx]);
 
-      if(d < SDFvalues(i0, j0, k0))
-      {
-#ifdef USE_MULTITHREADS
-          std::lock_guard<std::mutex> guard(g_mutex);
-#endif
-         SDFvalues(i0,j0,k0) = d;
-         closest_tris(i0,j0,k0) = closest_tris(i1,j1,k1);
-      }
-   }
+          if(d < SDFvalues(i0, j0, k0))
+          {
+    #ifdef USE_MULTITHREADS
+              std::lock_guard<std::mutex> guard(g_mutex);
+    #endif
+             SDFvalues(i0,j0,k0) = d;
+             closest_tris(i0,j0,k0) = closest_tris(i1,j1,k1);
+          }
+       }
 }
 
 
+// 
 void sweep(const std::vector<Vec3ui>&tris, const std::vector<Vec3f> &vers,
-    SDF_GEN::Array3f& SDFvalues, SDF_GEN::Array3i &closest_tris, const Vec3f &origin, const float step,
-                  const int di, const int dj, const int dk)
+        SDF_GEN::Array3f& SDFvalues, SDF_GEN::Array3i &closest_tris, \
+        const Vec3f &origin, const float step, const int di, const int dj, const int dk)
 {
     const float ox = origin[0];
     const float oy = origin[1];
