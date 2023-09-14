@@ -42,11 +42,13 @@ namespace MY_DEBUG
         vecGC[2] = (cz - oz) / stepT;
     }
 
+
     template <typename T>
     Eigen::Matrix<T, 1, 3> vec2Vec(const Vec<3, T>& vec)
     {
         return Eigen::Matrix<T, 1, 3>{vec[0], vec[1], vec[2]};
     }
+
 
     template <typename T>
     Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> vers2mat(const std::vector<Vec<3, T>>& vers)
@@ -62,6 +64,7 @@ namespace MY_DEBUG
         return versMat;
     }
 
+
     template <typename T>
     Eigen::MatrixXi tris2mat(const std::vector<Vec<3, T>>& tris)
     {
@@ -74,6 +77,52 @@ namespace MY_DEBUG
             trisMat(i, 2) = static_cast<int>(tris[i][2]);
         }
         return trisMat;
+    }
+
+
+    template <unsigned int N, typename T, typename Derived>
+    void eigenVec2sdfVec(Vec<N, T>& vec, const Eigen::PlainObjectBase<Derived>& eigenVec)
+    {
+        assert(1 == eigenVec.rows() || 1 == eigenVec.cols(), "assert!!! eigenVec should be a vector.");
+        assert(N == eigenVec.rows() * eigenVec.cols(), "assert!!! vec and eigenVec should have the same size.");
+
+        for (unsigned i = 0; i < N; ++i)
+            vec[i] = static_cast<T>(eigenVec(i));
+    }
+
+
+    template <unsigned int N, typename T, typename Derived>
+    void sdfVec2eigenVec(Eigen::PlainObjectBase<Derived>& eigenVec, const Vec<N, T>& vec)
+    {
+        using Scalar = typename Derived::Scalar;
+        assert(1 == eigenVec.rows() || 1 == eigenVec.cols(), "assert!!! eigenVec should be a vector.");
+        assert(N == eigenVec.rows() * eigenVec.cols(), "assert!!! vec and eigenVec should have the same size.");
+        for (unsigned i = 0; i < N; ++i)
+            eigenVec(i) = static_cast<Scalar>(vec[i]);
+    }
+
+
+    template <typename T, typename Derived>
+    void eigenVec2sdfArray3(SDF_GEN::Array3<T, SDF_GEN::Array1<T>>& arry, const Eigen::PlainObjectBase<Derived>& eigenVec)
+    {
+        assert(1 == eigenVec.rows() || 1 == eigenVec.cols(), "assert!!! eigenVec should be a vector.");
+
+        unsigned elemCount = static_cast<unsigned>(eigenVec.rows() * eigenVec.cols());
+        assert(static_cast<unsigned>(arry.ni * arry.nj * arry.nk) == elemCount, "assert!!! vec and eigenVec should have the same size.");
+
+        for (unsigned i = 0; i < elemCount; ++i)
+            arry.a[i] = static_cast<T>(eigenVec(i));
+    }
+
+
+    template <typename T, typename Derived>
+    void sdfArray32eigenVec(Eigen::PlainObjectBase<Derived>& eigenVec, const SDF_GEN::Array3<T, SDF_GEN::Array1<T>>& arry)
+    {
+        assert(1 == eigenVec.rows() || 1 == eigenVec.cols(), "assert!!! eigenVec should be a vector.");
+        assert(arry.ni * arry.nj * arry.nk == eigenVec.rows() * eigenVec.cols(), "assert!!! vec and eigenVec should have the same size.");
+
+        std::vector<T>& values = arry.a;
+        eigenVec2Vec(values, eigenVec);
     }
 
 
@@ -129,6 +178,7 @@ namespace MY_DEBUG
         std::cout << std::endl;
         return;
     }
+
 
     template <typename T, typename... Types>
     static void debugDisp(const T& firstArg, const Types&... args)
@@ -475,6 +525,104 @@ void calcSDF(const std::vector<Vec3ui>& tris, const std::vector<Vec3f>& vers,
 }
 
 
+
+bool writeSDF(const char* fileName, const SDF_GEN::Array3f& SDFvalues, const Vec3f& origin, const float step)
+{
+    // 输出数据写入到SDF文件中：
+    std::ofstream outfile(fileName);
+    outfile << SDFvalues.ni << " " << SDFvalues.nj << " " << SDFvalues.nk << std::endl;        // 第一行：
+    outfile << origin[0] << " " << origin[1] << " " << origin[2] << std::endl;   // 第二行：
+    outfile << step << std::endl;                                                 // 第三行：grad spacing，即栅格的尺寸；
+    for (unsigned int i = 0; i < SDFvalues.a.size(); ++i)                // 第三行之后：
+        outfile << SDFvalues.a[i] << std::endl;
+    outfile.close();
+
+    return true;
+}
+
+
+//解析.sdf文本文件：
+double parseSDF(std::vector<int>& stepCounts, Eigen::RowVector3d& gridsOri, Eigen::VectorXd& SDF, const char* filePath)
+{
+    /*
+        double parseSDF(												返回距离场的采样步长；
+                std::vector<int>& stepCounts,					xyz三个方向上的步数
+                Eigen::RowVector3d& gridsOri,					距离场空间的原点
+                Eigen::VectorXd& SDF,								距离场数据
+                const char* filePath										SDF文件目录
+                )
+
+    */
+    double SDFstep = -1;
+    stepCounts.resize(3);
+    std::string readStr(1024, '\0');
+    std::ifstream sdfFile(filePath);
+    if (!sdfFile)
+        return SDFstep;
+
+    // 第一行：步数
+    {
+        std::string tmpStr;
+        sdfFile.getline(&readStr[0], 1024);
+
+        unsigned index = 0;
+        for (const auto& ch : readStr)
+        {
+            if (ch >= '0' && ch <= '9' || ch == '.' || ch == '+' || ch == '-')
+                tmpStr.push_back(ch);
+            else
+            {
+                if (tmpStr.size() > 0)
+                {
+                    stepCounts[index] = std::stoi(tmpStr);
+                    index++;
+                    tmpStr.clear();
+                }
+            }
+        }
+    }
+
+    // 第二行：栅格原点
+    {
+        std::string tmpStr;
+        sdfFile.getline(&readStr[0], 1024);
+
+        unsigned index = 0;
+        for (const auto& ch : readStr)
+        {
+            if (ch >= '0' && ch <= '9' || ch == '.' || ch == '+' || ch == '-')
+                tmpStr.push_back(ch);
+            else
+            {
+                if (tmpStr.size() > 0)
+                {
+                    gridsOri(index) = std::stod(tmpStr);
+                    index++;
+                    tmpStr.clear();
+                }
+            }
+        }
+    }
+
+    // 第三行：距离场空间步长：
+    sdfFile.getline(&readStr[0], 1024);
+    SDFstep = std::stod(readStr);
+
+    // 第三行之后：距离场数据：
+    unsigned dataCount = stepCounts[0] * stepCounts[1] * stepCounts[2];
+    SDF.resize(dataCount);
+    for (unsigned i = 0; i < dataCount; ++i)
+    {
+        sdfFile.getline(&readStr[0], 1024);
+        SDF(i) = std::stod(readStr);
+    }
+    sdfFile.close();
+
+    return SDFstep;
+}
+
+
+
 ////////////////////////////////////////////////////////////////////////////////////////////// 测试函数：
 
 // 原main函数：
@@ -717,7 +865,6 @@ int test1(int argc, char* argv[])
     if (ignored_lines > 0)
         std::cout << "Warning: " << ignored_lines << " lines were ignored since they did not contain faces or vertices.\n";
     std::cout << "Read in " << vers.size() << " vertices and " << tris.size() << " faces." << std::endl;
-
 
     // 2. 生成采样点；
     Vec3f unit(1, 1, 1);
@@ -969,12 +1116,33 @@ void test3()
 }
 
 
+// testIO:
+void test4() 
+{
+    std::vector<int> stepCounts;
+    Eigen::RowVector3d gridsOri;
+    Eigen::VectorXd SDF;
+    double step = parseSDF(stepCounts, gridsOri, SDF, "E:/材料/tooth.sdf");
+    const int xCount = stepCounts[0];
+    const int yCount = stepCounts[1];
+    const int zCount = stepCounts[2];
+
+    Vec3f origin;
+    SDF_GEN::Array3f SDFmat(xCount, yCount, zCount);
+    eigenVec2sdfVec(origin, gridsOri);
+    eigenVec2sdfArray3(SDFmat, SDF);
+
+    writeSDF("E:/tooth.sdf", SDFmat, origin, static_cast<float>(step));
+
+    debugDisp("finished.");
+}
+
 
 int main(int argc, char* argv[]) 
 {
-    test1(argc, argv);
+    // test1(argc, argv);
 
-    // test3();
+    test4();
 
     debugDisp("main() finished.");
  
