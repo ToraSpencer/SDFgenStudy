@@ -1,3 +1,4 @@
+#include "makelevelset2.h"
 #include "makelevelset3.h"
 #include "config.h"
 #include <list> 
@@ -19,6 +20,13 @@
             其中ox为栅格起点的x坐标，step为栅格步长；
  */
 
+
+// 序列化的距离场数据：
+/*
+    距离场数据按照x优先y其次z最后的顺序存储，
+        即按数组索引增大方向存储的是f(0, 0, 0), f(1, 0, 0), f(2, 0, 0)... f(0, 1, 0), f(1, 1, 0) ..f(0, 0, 1), f(1, 0, 1), .
+
+*/
 
 ////////////////////////////////////////////////////////////////////////////////////////////// 表象转换、DEBUG 接口、辅助接口
 namespace MY_DEBUG
@@ -64,6 +72,16 @@ namespace MY_DEBUG
         return versMat;
     }
 
+    template <unsigned int N, typename Derived, typename T>
+    void mat2vers(std::vector<Vec<N, T>>& vers, const Eigen::PlainObjectBase<Derived>& versMat)
+    {
+        assert(N == versMat.cols(), "Assert!!! versMat and vers should have the same dimensions.");
+        unsigned versCount = versMat.rows();
+        vers.resize(versCount);
+        for (unsigned i = 0; i < versCount; ++i)
+            for (unsigned k = 0; k < N; ++k)
+                vers[i][k] = static_cast<T>(versMat(i, k)); 
+    }
 
     template <typename T>
     Eigen::MatrixXi tris2mat(const std::vector<Vec<3, T>>& tris)
@@ -120,6 +138,16 @@ namespace MY_DEBUG
     {
         assert(1 == eigenVec.rows() || 1 == eigenVec.cols(), "assert!!! eigenVec should be a vector.");
         assert(arry.ni * arry.nj * arry.nk == eigenVec.rows() * eigenVec.cols(), "assert!!! vec and eigenVec should have the same size.");
+
+        std::vector<T>& values = arry.a;
+        eigenVec2Vec(values, eigenVec);
+    }
+
+    template <typename T, typename Derived>
+    void sdfArray22eigenVec(Eigen::PlainObjectBase<Derived>& eigenVec, const SDF_GEN::Array2<T, SDF_GEN::Array1<T>>& arry)
+    {
+        assert(1 == eigenVec.rows() || 1 == eigenVec.cols(), "assert!!! eigenVec should be a vector.");
+        assert(arry.ni * arry.nj  == eigenVec.rows() * eigenVec.cols(), "assert!!! vec and eigenVec should have the same size.");
 
         std::vector<T>& values = arry.a;
         eigenVec2Vec(values, eigenVec);
@@ -327,7 +355,7 @@ Eigen::MatrixXi getLoopEdges(const int loopVersCount)
 
 // 原make_level_set3()函数；
 void calcSDF(const std::vector<Vec3ui>& tris, const std::vector<Vec3f>& vers,
-        const Vec3f& startPos, float step, int ni, int nj, int nk,
+        const Vec3f& startPos, const float step, const int ni, const int nj, const int nk,
         SDF_GEN::Array3f& SDFvalues, const int exact_band = 1)
 {
     /*
@@ -525,7 +553,12 @@ void calcSDF(const std::vector<Vec3ui>& tris, const std::vector<Vec3f>& vers,
 }
 
 
+void calcSDF2Dconst(const std::vector<Vec2f>& vers,
+    const Vec2f& startPos, const float step, const int ni, const int nj,
+    SDF_GEN::Array3f& SDFvalues, const int exact_band = 1) {}
 
+
+// 写.sdf文本文件：
 bool writeSDF(const char* fileName, const SDF_GEN::Array3f& SDFvalues, const Vec3f& origin, const float step)
 {
     // 输出数据写入到SDF文件中：
@@ -541,7 +574,24 @@ bool writeSDF(const char* fileName, const SDF_GEN::Array3f& SDFvalues, const Vec
 }
 
 
-//解析.sdf文本文件：
+template<typename T>
+bool writeSDF2D(const char* fileName, const SDF_GEN::Array2<T, Array1<T> >& SDFvalues, \
+    const Vec<2, T>& origin, const T step)
+{
+    // 输出数据写入到SDF文件中：
+    std::ofstream outfile(fileName);
+    outfile << SDFvalues.ni << " " << SDFvalues.nj << std::endl;        // 第一行：
+    outfile << origin[0] << " " << origin[1] << std::endl;   // 第二行：
+    outfile << step << std::endl;                                                 // 第三行：grad spacing，即栅格的尺寸；
+    for (unsigned int i = 0; i < SDFvalues.a.size(); ++i)                // 第三行之后：
+        outfile << SDFvalues.a[i] << std::endl;
+    outfile.close();
+
+    return true;
+}
+
+
+// 解析.sdf文本文件：
 double parseSDF(std::vector<int>& stepCounts, Eigen::RowVector3d& gridsOri, Eigen::VectorXd& SDF, const char* filePath)
 {
     /*
@@ -1138,11 +1188,57 @@ void test4()
 }
 
 
+// test make_level_set2()
+void test5()
+{
+    Eigen::MatrixXd versMat, versMat2D;
+    std::vector<Vec2d> vers2D;
+    objReadVerticesMat(versMat, "E:/材料/bdryUpper2D.obj");
+    versMat2D = versMat.leftCols(2);
+    mat2vers(vers2D, versMat2D);
+
+    // 生成边数据：
+    const unsigned versCount = vers2D.size();
+    const unsigned edgesCount = versCount;
+    std::vector<Vec2ui> edges(versCount);
+    for (unsigned i = 0; i < edgesCount; ++i)
+    {
+        edges[i][0] = i;
+        edges[i][1] = i + 1;
+    }
+    edges.rbegin()->operator[](1) = 0;
+
+    // 生成采样点；
+    double step = 0.5; 
+    int interCounts = 3;  
+    Vec2d min_box(std::numeric_limits<float>::max(), std::numeric_limits<float>::max()),\
+        max_box(-std::numeric_limits<float>::max(), -std::numeric_limits<float>::max());
+    Vec2d unit(1, 1); 
+    for (const auto& ver : vers2D)
+        update_minmax(ver, min_box, max_box);                    // 更新网格包围盒数据；
+
+    min_box -= interCounts * step * unit;                               // 坐标栅格的起点坐标；
+    max_box += interCounts * step * unit;
+    Vec2ui sizes = Vec2ui((max_box - min_box) / step);        // 坐标栅格三个维度上的步数；
+    unsigned xCount = sizes[0];
+    unsigned yCount = sizes[1];   
+
+    // 生成SDF:
+    Array2d SDFvalues;
+    make_level_set2(edges, vers2D, min_box, step, xCount, yCount, SDFvalues);
+
+    // 输出：
+    writeSDF2D("E:/tmpSDF2D.sdf", SDFvalues, min_box, step);
+
+    debugDisp("finished.");
+}
+
+
 int main(int argc, char* argv[]) 
 {
     // test1(argc, argv);
 
-    test4();
+    test5();
 
     debugDisp("main() finished.");
  

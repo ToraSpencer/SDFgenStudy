@@ -875,6 +875,5 @@ namespace SDF_GEN
     typedef WrapArray1<unsigned short>     WrapArray1us;
     typedef WrapArray1<char>               WrapArray1c;
     typedef WrapArray1<unsigned char>      WrapArray1uc;
-
-#endif
 }
+#endif
