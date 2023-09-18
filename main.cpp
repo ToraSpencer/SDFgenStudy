@@ -28,6 +28,7 @@
 
 */
 
+
 ////////////////////////////////////////////////////////////////////////////////////////////// 表象转换、DEBUG 接口、辅助接口
 namespace MY_DEBUG
 {
@@ -783,8 +784,8 @@ int test0(int argc, char* argv[])
 
     // 3. 计算距离场：
     std::cout << "Computing signed distance field.\n";
-    SDF_GEN::Array3f DFvalues_grid;
-    make_level_set3(tris, vers, min_box, dx, sizes[0], sizes[1], sizes[2], DFvalues_grid);
+    SDF_GEN::Array3f SDFvalues;
+    make_level_set3(tris, vers, min_box, dx, sizes[0], sizes[1], sizes[2], SDFvalues);
 
     std::string outname;
 
@@ -795,19 +796,19 @@ int test0(int argc, char* argv[])
     std::cout << "Writing results to: " << outname << "\n";
     vtkSmartPointer<vtkImageData> output_volume = vtkSmartPointer<vtkImageData>::New();
 
-    output_volume->SetDimensions(DFvalues_grid.ni, DFvalues_grid.nj, DFvalues_grid.nk);
-    output_volume->SetOrigin(DFvalues_grid.ni * dx / 2, DFvalues_grid.nj * dx / 2, DFvalues_grid.nk * dx / 2);
+    output_volume->SetDimensions(SDFvalues.ni, SDFvalues.nj, SDFvalues.nk);
+    output_volume->SetOrigin(SDFvalues.ni * dx / 2, SDFvalues.nj * dx / 2, SDFvalues.nk * dx / 2);
     output_volume->SetSpacing(dx, dx, dx);
 
     vtkSmartPointer<vtkFloatArray> distance = vtkSmartPointer<vtkFloatArray>::New();
 
-    distance->SetNumberOfTuples(DFvalues_grid.a.size());
+    distance->SetNumberOfTuples(SDFvalues.a.size());
 
     output_volume->GetPointData()->AddArray(distance);
     distance->SetName("Distance");
 
-    for (unsigned int i = 0; i < DFvalues_grid.a.size(); ++i) {
-        distance->SetValue(i, DFvalues_grid.a[i]);
+    for (unsigned int i = 0; i < SDFvalues.a.size(); ++i) {
+        distance->SetValue(i, SDFvalues.a[i]);
     }
 
     vtkSmartPointer<vtkXMLImageDataWriter> writer =
@@ -829,11 +830,11 @@ int test0(int argc, char* argv[])
 
     // 输出数据写入到SDF文件中：
     std::ofstream outfile(outname.c_str());
-    outfile << DFvalues_grid.ni << " " << DFvalues_grid.nj << " " << DFvalues_grid.nk << std::endl;        // 第一行：
+    outfile << SDFvalues.ni << " " << SDFvalues.nj << " " << SDFvalues.nk << std::endl;        // 第一行：
     outfile << min_box[0] << " " << min_box[1] << " " << min_box[2] << std::endl;   // 第二行：
     outfile << dx << std::endl;                 // 第三行：dx——grad spacing，即栅格的尺寸；
-    for (unsigned int i = 0; i < DFvalues_grid.a.size(); ++i)         // 第三行之后：
-        outfile << DFvalues_grid.a[i] << std::endl;
+    for (unsigned int i = 0; i < SDFvalues.a.size(); ++i)         // 第三行之后：
+        outfile << SDFvalues.a[i] << std::endl;
     outfile.close();
 #endif
 
@@ -925,28 +926,28 @@ int test1(int argc, char* argv[])
     std::cout << "Bound box size: (" << min_box << ") to (" << max_box << ") with dimensions " << sizes << "." << std::endl;
 
     // 3. 计算距离场：
-    SDF_GEN::Array3f DFvalues_grid;
-    // make_level_set3(tris, vers, min_box, step, sizes[0], sizes[1], sizes[2], DFvalues_grid);
-    calcSDF(tris, vers, min_box, step, sizes[0], sizes[1], sizes[2], DFvalues_grid);
+    SDF_GEN::Array3f SDFvalues;
+    // make_level_set3(tris, vers, min_box, step, sizes[0], sizes[1], sizes[2], SDFvalues);
+    calcSDF(tris, vers, min_box, step, sizes[0], sizes[1], sizes[2], SDFvalues);
     tt.endCout("读网格、计算距离场耗时：");
 
     // 写输出数据——距离场数据按照x优先y其次z最后的顺序存储，即按数组索引增大方向存储的是f(0, 0, 0), f(1, 0, 0), f(2, 0, 0)... f(0, 1, 0), f(1, 1, 0) ..f(0, 0, 1), f(1, 0, 1), ..
     std::string outname;
     outname = std::string{ "E:/" } + filename.substr(0, filename.size() - 4) + std::string(".sdf");
     std::ofstream outfile(outname.c_str());
-    outfile << DFvalues_grid.ni << " " << DFvalues_grid.nj << " " << DFvalues_grid.nk << std::endl;        // 第一行：
+    outfile << SDFvalues.ni << " " << SDFvalues.nj << " " << SDFvalues.nk << std::endl;        // 第一行：
     outfile << min_box[0] << " " << min_box[1] << " " << min_box[2] << std::endl;   // 第二行：
     outfile << step << std::endl;                                                    // 第三行：step——grad spacing，即栅格的尺寸；
-    for (unsigned int i = 0; i < DFvalues_grid.a.size(); ++i)         // 第三行之后：
-        outfile << DFvalues_grid.a[i] << std::endl;
+    for (unsigned int i = 0; i < SDFvalues.a.size(); ++i)         // 第三行之后：
+        outfile << SDFvalues.a[i] << std::endl;
     outfile.close();
 
     // 4. 生成距离场小于0的点云——距离场数据按照x优先y其次z最后的顺序存储，即按数组索引增大方向存储的是f(0, 0, 0), f(1, 0, 0), f(2, 0, 0)... f(0, 1, 0), f(1, 1, 0) ..f(0, 0, 1), f(1, 0, 1), ..
     std::list<Vec3f> versList;
-    for (unsigned i = 0; i < DFvalues_grid.ni; ++i) 
-        for (unsigned j = 0; j < DFvalues_grid.nj; ++j)
-            for (unsigned k = 0; k < DFvalues_grid.nk; ++k)
-                if (DFvalues_grid(i, j, k) < 0)
+    for (unsigned i = 0; i < SDFvalues.ni; ++i) 
+        for (unsigned j = 0; j < SDFvalues.nj; ++j)
+            for (unsigned k = 0; k < SDFvalues.nk; ++k)
+                if (SDFvalues(i, j, k) < 0)
                     versList.push_back(Vec3f{ min_box[0] + i * step, min_box[1] + j * step, min_box[2] + k * step });
 
     // 5. 写输出数据
@@ -1066,8 +1067,8 @@ int test2(int argc, char* argv[])
     min_box = min_box + offsetArrow;            // 只需要平移min_box即可；
 
     // 3. 计算距离场：
-    SDF_GEN::Array3f DFvalues_grid;
-    make_level_set3(tris, vers, min_box, step, sizes[0], sizes[1], sizes[2], DFvalues_grid);
+    SDF_GEN::Array3f SDFvalues;
+    make_level_set3(tris, vers, min_box, step, sizes[0], sizes[1], sizes[2], SDFvalues);
 
     std::string outname;
     outname = std::string{ "E:/" } + filename.substr(0, filename.size() - 4) + std::string(".sdf");
@@ -1083,11 +1084,11 @@ int test2(int argc, char* argv[])
 
     // 写输出数据——距离场数据按照x优先y其次z最后的顺序存储，即按数组索引增大方向存储的是f(0, 0, 0), f(1, 0, 0), f(2, 0, 0)... f(0, 1, 0), f(1, 1, 0) ..f(0, 0, 1), f(1, 0, 1), ..
     std::ofstream outfile(outname.c_str());
-    outfile << DFvalues_grid.ni << " " << DFvalues_grid.nj << " " << DFvalues_grid.nk << std::endl;        // 第一行：
+    outfile << SDFvalues.ni << " " << SDFvalues.nj << " " << SDFvalues.nk << std::endl;        // 第一行：
     outfile << min_box[0] << " " << min_box[1] << " " << min_box[2] << std::endl;   // 第二行：
     outfile << step << std::endl;                                                    // 第三行：step——grad spacing，即栅格的尺寸；
-    for (unsigned int i = 0; i < DFvalues_grid.a.size(); ++i)            // 第三行之后：
-        outfile << DFvalues_grid.a[i] << std::endl;
+    for (unsigned int i = 0; i < SDFvalues.a.size(); ++i)            // 第三行之后：
+        outfile << SDFvalues.a[i] << std::endl;
     outfile.close();
 
 #endif
@@ -1135,17 +1136,17 @@ void test3()
     std::cout << "Bound box size: (" << min_box << ") to (" << max_box << ") with dimensions " << sizes << "." << std::endl;
 
     // 3. 计算距离场：
-    SDF_GEN::Array3f DFvalues_grid;
-    calcSDF(tris, vers, min_box, step, sizes[0], sizes[1], sizes[2], DFvalues_grid);
+    SDF_GEN::Array3f SDFvalues;
+    calcSDF(tris, vers, min_box, step, sizes[0], sizes[1], sizes[2], SDFvalues);
     tikCount += tt.endGetCount();
     debugDisp("SDFGen：读网格+计算SDF总耗时：", tikCount);
 
     // 4. 生成距离场小于0的点云——距离场数据按照x优先y其次z最后的顺序存储，即按数组索引增大方向存储的是f(0, 0, 0), f(1, 0, 0), f(2, 0, 0)... f(0, 1, 0), f(1, 1, 0) ..f(0, 0, 1), f(1, 0, 1), ..
     std::list<Vec3f> versList;
-    for (unsigned i = 0; i < DFvalues_grid.nk; ++i)
-        for (unsigned j = 0; j < DFvalues_grid.nj; ++j)
-            for (unsigned k = 0; k < DFvalues_grid.nk; ++k)
-                if (DFvalues_grid(i, j, k) >= 0 && DFvalues_grid(i, j, k) <= 0.2)
+    for (unsigned i = 0; i < SDFvalues.nk; ++i)
+        for (unsigned j = 0; j < SDFvalues.nj; ++j)
+            for (unsigned k = 0; k < SDFvalues.nk; ++k)
+                if (SDFvalues(i, j, k) >= 0 && SDFvalues(i, j, k) <= 0.2)
                     versList.push_back(Vec3f{ min_box[0] + i * step, min_box[1] + j * step, min_box[2] + k * step });
 
     // 5. 写输出数据
@@ -1211,8 +1212,8 @@ void test5()
     // 生成采样点；
     double step = 0.5; 
     int interCounts = 3;  
-    Vec2d min_box(std::numeric_limits<float>::max(), std::numeric_limits<float>::max()),\
-        max_box(-std::numeric_limits<float>::max(), -std::numeric_limits<float>::max());
+    Vec2d min_box(std::numeric_limits<double>::max(), std::numeric_limits<double>::max()),\
+        max_box(-std::numeric_limits<double>::max(), -std::numeric_limits<double>::max());
     Vec2d unit(1, 1); 
     for (const auto& ver : vers2D)
         update_minmax(ver, min_box, max_box);                    // 更新网格包围盒数据；
@@ -1234,11 +1235,253 @@ void test5()
 }
 
 
+////////////////////////////////////////////////////////////////////////////////////////////// 生成控制台程序：
+int cmdGenSDF3D(int argc, char* argv[])
+{
+    if (argc != 5)
+    {
+        std::cout << "SDFGen - A utility for converting closed oriented triangle meshes into grid-based signed distance fields.\n";
+        std::cout << "\nThe output file format is:";
+        std::cout << "<ni> <nj> <nk>\n";
+        std::cout << "<origin_x> <origin_y> <origin_z>\n";
+        std::cout << "<step>\n";
+        std::cout << "<value_1> <value_2> <value_3> [...]\n\n";
+
+        std::cout << "(ni,nj,nk) are the integer dimensions of the resulting distance field.\n";
+        std::cout << "(origin_x,origin_y,origin_z) is the 3D position of the grid origin.\n";
+        std::cout << "<step> is the grid spacing.\n\n";
+        std::cout << "<value_n> are the signed distance data values, in ascending order of i, then j, then k.\n";
+
+        std::cout << "Usage: SDFGen <sdfPath><objPath> <step><interCounts>\n\n";
+        std::cout << "Where:\n";
+        std::cout << "\t<objPath> specifies a Wavefront OBJ (text) file representing a *triangle* mesh (no quad or poly meshes allowed). File must use the suffix \".obj\".\n";
+        std::cout << "\t<step> specifies the length of grid cell in the resulting distance field.\n";
+        std::cout << "\t<interCounts> specifies the number of cells worth of interCounts between the object bound box and the boundary of the distance field grid. Minimum is 1.\n\n";
+
+        exit(-1);
+    }
+
+    std::string sdfPath(argv[1]);            // 参数2——网格文件地址
+    if (sdfPath.size() < 5 || sdfPath.substr(sdfPath.size() - 4) != std::string(".sdf"))
+    {
+        std::cerr << "Error: Expected sdfPath of the form <name>.sdf.\n";
+        exit(-1);
+    }
+
+    std::string objPath(argv[2]);            // 参数2——网格文件地址
+    if (objPath.size() < 5 || objPath.substr(objPath.size() - 4) != std::string(".obj"))
+    {
+        std::cerr << "Error: Expected OBJ file with objPath of the form <name>.obj.\n";
+        exit(-1);
+    }
+
+    std::stringstream arg2(argv[3]);      // 参数3——栅格中单个方块(grid cell)的尺寸；
+    float step;
+    arg2 >> step;
+
+    std::stringstream arg3(argv[4]);      // 参数4——设定的栅格距离场边界到网格包围盒的最小距离，用方块数量表示，最小为1；
+    int interCounts;
+    arg3 >> interCounts;
+
+    if (interCounts < 1)
+        interCounts = 1;
+
+    // start with a massive inside out bound box.
+    Vec3f min_box(std::numeric_limits<float>::max(), std::numeric_limits<float>::max(), std::numeric_limits<float>::max()),
+        max_box(-std::numeric_limits<float>::max(), -std::numeric_limits<float>::max(), -std::numeric_limits<float>::max());
+
+    std::cout << "Reading data.\n";
+
+    // 1. 读取输入网格，生成网格包围盒:
+    std::ifstream infile(objPath.c_str());
+    if (!infile)
+    {
+        std::cerr << "Failed to open. Terminating.\n";
+        exit(-1);
+    }
+
+    int ignored_lines = 0;
+    std::string line;
+    std::vector<Vec3f> vers;                  // 输入网格顶点
+    std::vector<Vec3ui> tris;                 // 输入网格三角片；
+
+    while (!infile.eof())
+    {
+        std::getline(infile, line);
+        if (line.substr(0, 1) == std::string("v") && line.substr(0, 2) != std::string("vn")) //.obj files sometimes contain vertex normals indicated by "vn"
+        {
+            std::stringstream data(line);
+            char c;
+            Vec3f point;
+            data >> c >> point[0] >> point[1] >> point[2];
+            vers.push_back(point);
+            update_minmax(point, min_box, max_box);
+        }
+        else if (line.substr(0, 1) == std::string("f"))
+        {
+            std::stringstream data(line);
+            char c;
+            int v0, v1, v2;
+            data >> c >> v0 >> v1 >> v2;
+            tris.push_back(Vec3ui(v0 - 1, v1 - 1, v2 - 1));
+        }
+        else if (line.substr(0, 2) == std::string("vn"))
+        {
+            std::cerr << "Obj-loader is not able to parse vertex normals, please strip them from the input file. \n";
+            exit(-2);
+        }
+        else
+            ++ignored_lines;
+    }
+    infile.close();
+
+    if (ignored_lines > 0)
+        std::cout << "Warning: " << ignored_lines << " lines were ignored since they did not contain faces or vertices.\n";
+    std::cout << "Read in " << vers.size() << " vertices and " << tris.size() << " faces." << std::endl;
+
+    // 2. Add interCounts around the box.
+    Vec3f unit(1, 1, 1);
+    min_box -= interCounts * step * unit;
+    max_box += interCounts * step * unit;
+    Vec3ui sizes = Vec3ui((max_box - min_box) / step);
+    std::cout << "Bound box size: (" << min_box << ") to (" << max_box << ") with dimensions " << sizes << "." << std::endl;
+
+    // 3. 计算距离场：
+    std::cout << "Computing signed distance field.\n";
+    SDF_GEN::Array3f SDFvalues;
+    make_level_set3(tris, vers, min_box, step, sizes[0], sizes[1], sizes[2], SDFvalues);
+     
+    std::cout << "Writing results to: " << sdfPath << "\n";
+
+    // 输出数据写入到SDF文件中：
+    writeSDF(sdfPath.c_str(), SDFvalues, min_box, step);
+ 
+    std::cout << "Processing complete.\n";
+    return 0;
+}
+
+
+int cmdGenSDF2D(int argc, char* argv[])
+{
+    if (argc != 5)
+    {
+        std::cout << "SDFGen - A utility for converting closed oriented triangle meshes into grid-based signed distance fields.\n";
+        std::cout << "Notice that the loop must be in the XOY plane.\n";
+        std::cout << "\nThe output file format is:";
+        std::cout << "<ni> <nj> <nk>\n";
+        std::cout << "<origin_x> <origin_y> <origin_z>\n";
+        std::cout << "<step>\n";
+        std::cout << "<value_1> <value_2> <value_3> [...]\n\n";
+
+        std::cout << "(ni,nj,nk) are the integer dimensions of the resulting distance field.\n";
+        std::cout << "(origin_x,origin_y,origin_z) is the 3D position of the grid origin.\n";
+        std::cout << "<step> is the grid spacing.\n\n";
+        std::cout << "<value_n> are the signed distance data values, in ascending order of i, then j, then k.\n";
+
+        std::cout << "Usage: SDFGen <sdfPath><objPath> <step><interCounts>\n\n";
+        std::cout << "Where:\n";
+        std::cout << "\t<objPath> specifies a Wavefront OBJ (text) file representing a *triangle* mesh (no quad or poly meshes allowed). File must use the suffix \".obj\".\n";
+        std::cout << "\t<step> specifies the length of grid cell in the resulting distance field.\n";
+        std::cout << "\t<interCounts> specifies the number of cells worth of interCounts between the object bound box and the boundary of the distance field grid. Minimum is 1.\n\n";
+
+        exit(-1);
+    }
+
+    std::string sdfPath(argv[1]);            // 参数1——输出SDF文件路径
+    if (sdfPath.size() < 5 || sdfPath.substr(sdfPath.size() - 4) != std::string(".sdf"))
+    {
+        std::cerr << "Error: Expected sdfPath of the form <name>.sdf.\n";
+        exit(-1);
+    }
+
+    std::string objPath(argv[2]);            // 参数2——网格文件路径
+    if (objPath.size() < 5 || objPath.substr(objPath.size() - 4) != std::string(".obj"))
+    {
+        std::cerr << "Error: Expected OBJ file with objPath of the form <name>.obj.\n";
+        exit(-1);
+    }
+
+    std::stringstream arg2(argv[3]);      // 参数3——栅格中单个方块(grid cell)的尺寸；
+    double step;
+    arg2 >> step;
+
+    std::stringstream arg3(argv[4]);      // 参数4——设定的栅格距离场边界到网格包围盒的最小距离，用方块数量表示，最小为1；
+    int interCounts;
+    arg3 >> interCounts;
+
+    if (interCounts < 1)
+        interCounts = 1;
+     
+    // 1. 读取输入顶点，生成输入数据
+    std::ifstream infile(objPath.c_str());
+    if (!infile)
+    {
+        std::cerr << "Failed to open. Terminating.\n";
+        exit(-1);
+    }
+    int ignored_lines = 0;
+    std::string line;
+    std::vector<Vec2d> vers2D;                  // 输入网格顶点 
+    while (!infile.eof())
+    {
+        std::getline(infile, line);
+        if (line.substr(0, 1) == std::string("v") && line.substr(0, 2) != std::string("vn")) //.obj files sometimes contain vertex normals indicated by "vn"
+        {
+            std::stringstream data(line);
+            char c;
+            Vec3f point;
+            data >> c >> point[0] >> point[1] >> point[2];
+            vers2D.push_back(Vec2d{point[0], point[1]});
+        } 
+        else
+            ++ignored_lines;
+    }
+    infile.close(); 
+     
+    //      生成边数据：
+    const unsigned versCount = vers2D.size();
+    const unsigned edgesCount = versCount;
+    std::vector<Vec2ui> edges(versCount);
+    for (unsigned i = 0; i < edgesCount; ++i)
+    {
+        edges[i][0] = i;
+        edges[i][1] = i + 1;
+    }
+    edges.rbegin()->operator[](1) = 0;
+
+    //      生成采样点； 
+    Vec2d min_box(std::numeric_limits<double>::max(), std::numeric_limits<double>::max()), \
+        max_box(-std::numeric_limits<double>::max(), -std::numeric_limits<double>::max());
+    Vec2d unit(1, 1);
+    for (const auto& ver : vers2D)
+        update_minmax(ver, min_box, max_box);                    // 更新网格包围盒数据；
+
+    min_box -= interCounts * step * unit;                               // 坐标栅格的起点坐标；
+    max_box += interCounts * step * unit;
+    Vec2ui sizes = Vec2ui((max_box - min_box) / step);        // 坐标栅格三个维度上的步数；
+    unsigned xCount = sizes[0];
+    unsigned yCount = sizes[1];
+
+    // 3. 计算距离场：
+    std::cout << "Computing signed distance field.\n";
+    SDF_GEN::Array2d SDFvalues;
+    make_level_set2(edges, vers2D, min_box, step, sizes[0], sizes[1], SDFvalues);
+    std::cout << "Writing results to: " << sdfPath << "\n";
+
+    // 输出数据写入到SDF文件中：
+    writeSDF2D(sdfPath.c_str(), SDFvalues, min_box, step);
+
+    std::cout << "Processing complete.\n";
+    return 0;
+}
+
+
 int main(int argc, char* argv[]) 
 {
-    // test1(argc, argv);
+    return cmdGenSDF2D(argc, argv);
 
-    test5();
+    // test5();
+
 
     debugDisp("main() finished.");
  
