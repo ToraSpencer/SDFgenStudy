@@ -3,6 +3,20 @@
 #include "config.h"
 #include <list> 
 
+
+// 静态库：
+#include "myEigenIO/myEigenIO.h"
+#pragma comment(lib,"myEigenIO.lib")	
+
+#include "myEigenBasicMath/myEigenBasicMath.h"
+#pragma comment(lib, "myEigenBasicMath.lib")
+
+#include "myEigenModeling/myEigenModeling.h"
+#pragma comment(lib, "myEigenModeling.lib")
+
+#include "myEigenPMP/myEigenPMP.h"
+#pragma comment(lib, "myEigenPMP.lib")
+
  
 // 在指定空间内生成三角网格的符号距离场；
 /*
@@ -1478,9 +1492,9 @@ int cmdGenSDF2D(int argc, char* argv[])
 
 int main(int argc, char* argv[]) 
 {
-    return cmdGenSDF2D(argc, argv);
+    // return cmdGenSDF2D(argc, argv);
 
-    // test5();
+    test1(argc, argv);
 
 
     debugDisp("main() finished.");

@@ -11,20 +11,6 @@
 #include <thread>
 #include <mutex>
 
-// ¾²Ì¬¿â£º
-#include "myEigenIO/myEigenIO.h"
-#pragma comment(lib,"myEigenIO.lib")	
-
-#include "myEigenBasicMath/myEigenBasicMath.h"
-#pragma comment(lib, "myEigenBasicMath.lib")
-
-#include "myEigenModeling/myEigenModeling.h"
-#pragma comment(lib, "myEigenModeling.lib")
-
-#include "myEigenPMP/myEigenPMP.h"
-#pragma comment(lib, "myEigenPMP.lib")
-
-
 #define USE_MULTITHREADS
 
 #ifdef USE_MULTITHREADS

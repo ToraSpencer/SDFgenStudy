@@ -1,5 +1,123 @@
 #include "makelevelset3.h"
  
+// 并行for循环
+template<typename Func>
+void PARALLEL_FOR(unsigned int  beg, unsigned int  end, const Func& func, const unsigned int serial_if_less_than = 12)
+{
+    /*
+        PARALLEL_FOR(
+            unsigned int   beg,                                     起始元素索引
+            unsigned int  end,                                      尾元素索引
+            const unsigned int  serial_if_less_than,      如果需要处理的元素不小于该值，则使用并行化；
+            const Func & func										操作元素的函数子；
+            )
+    */
+    unsigned int elemCount = end - beg + 1;
+
+    if (elemCount < serial_if_less_than)
+        for (unsigned int i = beg; i < end; ++i)
+            func(i);
+    else
+    {
+        // 确定起的线程数；
+        const static unsigned n_threads_hint = std::thread::hardware_concurrency();
+        const static unsigned n_threads = (n_threads_hint == 0u) ? 8u : n_threads_hint;
+
+        // for循环的范围分解成几段；
+        unsigned int slice = (unsigned int)std::round(elemCount / static_cast<double>(n_threads));
+        slice = std::max(slice, 1u);
+
+        // 线程函数：
+        auto subTraverse = [&func](unsigned int head, unsigned int tail)
+        {
+            for (unsigned int k = head; k < tail; ++k)
+                func(k);
+        };
+
+        // 生成线程池，执行并发for循环；
+        std::vector<std::thread> pool;              // 线程池；
+        pool.reserve(n_threads);
+        unsigned int head = beg;
+        unsigned int tail = std::min(beg + slice, end);
+        for (unsigned int i = 0; i + 1 < n_threads && head < end; ++i)
+        {
+            pool.emplace_back(subTraverse, head, tail);
+            head = tail;
+            tail = std::min(tail + slice, end);
+        }
+        if (head < end)
+            pool.emplace_back(subTraverse, head, end);
+
+        // 线程同步；
+        for (std::thread& t : pool)
+        {
+            if (t.joinable())
+                t.join();
+        }
+    }
+}
+
+
+// 变参并行for循环——索引以外的参数使用std::tuple传入；
+template<typename Func, typename paramTuple>
+void PARALLEL_FOR(unsigned int  beg, unsigned int  end, const Func& func, \
+    const paramTuple& pt, const unsigned int serial_if_less_than = 12)
+{
+    /*
+        PARALLEL_FOR(
+            unsigned int   beg,                                     起始元素索引
+            unsigned int  end,                                      尾元素索引
+            const unsigned int  serial_if_less_than,      如果需要处理的元素不小于该值，则使用并行化；
+            const paramTuple& pt								索引以外的其他参数；
+            const Func & func										操作元素的函数子；
+            )
+    */
+    unsigned int elemCount = end - beg + 1;
+
+    if (elemCount < serial_if_less_than)
+        for (unsigned int i = beg; i < end; ++i)
+            func(i, pt);
+    else
+    {
+        // 确定起的线程数；
+        const static unsigned n_threads_hint = std::thread::hardware_concurrency();
+        const static unsigned n_threads = (n_threads_hint == 0u) ? 8u : n_threads_hint;
+
+        // for循环的范围分解成几段；
+        unsigned int slice = (unsigned int)std::round(elemCount / static_cast<double>(n_threads));
+        slice = std::max(slice, 1u);
+
+        // 线程函数：
+        auto subTraverse = [&func, &pt](unsigned int head, unsigned int tail)
+        {
+            for (unsigned int k = head; k < tail; ++k)
+                func(k, pt);
+        };
+
+        // 生成线程池，执行并发for循环；
+        std::vector<std::thread> pool;              // 线程池；
+        pool.reserve(n_threads);
+        unsigned int head = beg;
+        unsigned int tail = std::min(beg + slice, end);
+        for (unsigned int i = 0; i + 1 < n_threads && head < end; ++i)
+        {
+            pool.emplace_back(subTraverse, head, tail);
+            head = tail;
+            tail = std::min(tail + slice, end);
+        }
+        if (head < end)
+            pool.emplace_back(subTraverse, head, end);
+
+        // 线程同步；
+        for (std::thread& t : pool)
+        {
+            if (t.joinable())
+                t.join();
+        }
+    }
+}
+
+
 
 // 计算点边距离；  find distance x0 is from segment x1-x2
 float point_segment_distance(const Vec3f &x0, const Vec3f &x1, const Vec3f &x2)
