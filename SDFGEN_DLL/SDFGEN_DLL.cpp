@@ -6,19 +6,18 @@ template<typename TV, typename TI>
 bool genTriMeshSDF3D(SDF_RESULT& result, const TRIANGLE_MESH::triMesh<TV, TI>& mesh, \
         const float step, const int interCounts)
 {
-    result.interCounts = 0;
-    result.step = 0;
+    assert(step > 0 && interCounts > 0);
+
+    result.interCounts = interCounts;
+    result.step = step;
     result.origin = verF{0, 0, 0};
     result.stepsCount.clear();
     result.SDFvalues.clear();
 
-    // 0.
-    int interCounts0 = interCounts;
+    // 0. 
     Vec3f min_box(std::numeric_limits<float>::max(), std::numeric_limits<float>::max(), std::numeric_limits<float>::max()),
         max_box(-std::numeric_limits<float>::max(), -std::numeric_limits<float>::max(), -std::numeric_limits<float>::max());
-    if (interCounts < 1)
-        interCounts0 = 1;
-
+ 
     // 1. 读取输入网格，生成网格包围盒:  
     std::vector<Vec3f> vers;                  // 输入网格顶点
     std::vector<Vec3ui> tris;                 // 输入网格三角片；
@@ -35,8 +34,8 @@ bool genTriMeshSDF3D(SDF_RESULT& result, const TRIANGLE_MESH::triMesh<TV, TI>& m
   
     // 2. Add interCounts around the box.
     Vec3f unit(1, 1, 1);
-    min_box -= interCounts0 * step * unit;
-    max_box += interCounts0 * step * unit;
+    min_box -= interCounts * step * unit;
+    max_box += interCounts * step * unit;
     Vec3ui sizes = Vec3ui((max_box - min_box) / step); 
 
     // 3. 计算距离场： 
@@ -45,8 +44,6 @@ bool genTriMeshSDF3D(SDF_RESULT& result, const TRIANGLE_MESH::triMesh<TV, TI>& m
 
     // 4. 输出：
     const Array1<float>& SDFdata = SDFvalues.a;
-    result.step = step;
-    result.interCounts = interCounts0;
     result.origin = verF{ min_box[0], min_box[1], min_box[2] };
     result.stepsCount = std::vector<unsigned>{ sizes[0], sizes[1], sizes[2] };
     result.SDFvalues.resize(SDFdata.n);

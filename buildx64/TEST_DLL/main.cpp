@@ -67,13 +67,15 @@ namespace TEST_SDFGEN_3D
         triMeshF mesh1;
 		triMeshD mesh2;
         readOBJ(mesh1, "E:/材料/tooth.obj");
-		readOBJ(mesh2, "E:/材料/twoTeeth.obj");
+		readOBJ(mesh2, "E:/材料/rotatedTooth11.obj");
 		debugWriteMesh("meshInput1", mesh1);
 		debugWriteMesh("meshInput2", mesh2);
 
         // 1. 
         SDF_RESULT sdfData;
-        genSDF3D(sdfData, mesh1, 0.5, 3);
+		const float step = 0.3;
+		const int interCounts = 3;
+        genSDF3D(sdfData, mesh1, step, interCounts);
 
         // 2. 生成距离场小于0的点云——距离场数据按照x优先y其次z最后的顺序存储，即按数组索引增大方向存储的是f(0, 0, 0), f(1, 0, 0), f(2, 0, 0)... f(0, 1, 0), f(1, 1, 0) ..f(0, 0, 1), f(1, 0, 1), ..
 		{
@@ -94,7 +96,7 @@ namespace TEST_SDFGEN_3D
 
 
 		// 3. 
-		genSDF3D(sdfData, mesh2, 0.5);
+		genSDF3D(sdfData, mesh2, step, interCounts);
 		{
 			std::vector<verF> versOut;
 			std::list<verF> versList;
