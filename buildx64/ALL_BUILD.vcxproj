@@ -113,13 +113,13 @@
   <ItemGroup>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="G:\gitRepositories\SDFGen_study\buildx64\ZERO_CHECK.vcxproj">
+    <ProjectReference Include="..\buildx64\ZERO_CHECK.vcxproj">
       <Project>{1931AEDF-7B2D-3FE6-8A4F-EF7DFF6F3B0D}</Project>
       <Name>ZERO_CHECK</Name>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </ProjectReference>
-    <ProjectReference Include="G:\gitRepositories\SDFGen_study\buildx64\SDFGen.vcxproj">
+    <ProjectReference Include="..\buildx64\SDFGen.vcxproj">
       <Project>{36021407-5E55-3586-AA4A-7FE2182C48F5}</Project>
       <Name>SDFGen</Name>
     </ProjectReference>
